@@ -293,7 +293,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
   border-bottom:1px solid rgba(26,86,219,0.1);
 }
 .card-image img {
-  width:100%; height:100%; object-fit:cover; object-position:center;
+  width:100%; height:100%; object-fit:contain; object-position:center;
   transition:transform 0.4s ease;
 }
 .produto-card:hover .card-image img { transform:scale(1.05); }
