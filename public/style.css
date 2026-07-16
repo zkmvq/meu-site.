@@ -289,11 +289,11 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
 .produto-card:hover .card-glow { opacity:1; }
 .card-image {
   width:calc(100% + 4rem); margin:-2rem -2rem 1.2rem; position:relative; overflow:hidden;
-  height:180px; background:linear-gradient(135deg,rgba(26,86,219,0.08),rgba(26,86,219,0.02));
+  height:240px; background:linear-gradient(135deg,rgba(26,86,219,0.08),rgba(26,86,219,0.02));
   border-bottom:1px solid rgba(26,86,219,0.1);
 }
 .card-image img {
-  width:100%; height:100%; object-fit:cover; object-position:top center;
+  width:100%; height:100%; object-fit:cover; object-position:center;
   transition:transform 0.4s ease;
 }
 .produto-card:hover .card-image img { transform:scale(1.05); }
