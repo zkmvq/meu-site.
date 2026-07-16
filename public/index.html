@@ -476,5 +476,21 @@
   </div>
 
   <script src="script.js"></script>
+  <script>
+    // Captura token do Discord após OAuth2
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const dToken = params.get('discord_token');
+      const dUser  = params.get('discord_user');
+      if (dToken && dUser) {
+        localStorage.setItem('zk_token', dToken);
+        localStorage.setItem('zk_user', dUser);
+        // Limpa URL sem recarregar
+        window.history.replaceState({}, '', '/');
+        // Atualiza navbar
+        setTimeout(() => window.location.reload(), 100);
+      }
+    })();
+  </script>
 </body>
 </html>
