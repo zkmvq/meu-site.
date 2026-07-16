@@ -1,5 +1,46 @@
 // === ZK STUDIO — SCRIPT.JS ===
 
+// ── DISCORD TOKEN CAPTURE ─────────────────────────────────────────────
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const dToken = params.get('discord_token');
+  const dUser  = params.get('discord_user');
+  if (dToken && dUser) {
+    localStorage.setItem('zk_token', dToken);
+    try { localStorage.setItem('zk_user', decodeURIComponent(dUser)); } catch(_) {}
+    window.history.replaceState({}, '', '/');
+  }
+})();
+
+// ── NAVBAR AUTH ───────────────────────────────────────────────────────
+(function initNavAuth() {
+  const loginBtn = document.getElementById('navLoginBtn');
+  const userBtn  = document.getElementById('navUserBtn');
+  const avatar   = document.getElementById('navUserAvatar');
+  const nameEl   = document.getElementById('navUserName');
+  if (!loginBtn) return;
+
+  const token = localStorage.getItem('zk_token');
+  if (!token) return;
+
+  fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || !d.user) { localStorage.removeItem('zk_token'); return; }
+      loginBtn.style.display = 'none';
+      userBtn.style.display  = 'inline-flex';
+      // Avatar: imagem do Discord ou inicial do nome
+      if (d.user.avatar) {
+        avatar.innerHTML = `<img src="${d.user.avatar}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;" />`;
+      } else {
+        avatar.textContent = d.user.name.charAt(0).toUpperCase();
+      }
+      nameEl.textContent = d.user.name.split(' ')[0];
+      localStorage.setItem('zk_user', JSON.stringify(d.user));
+    })
+    .catch(() => {});
+})();
+
 // ── CURSOR COM DELAY ──────────────────────────────────────────────────
 (function initCursor() {
   const dot  = document.getElementById('cursor-dot');
