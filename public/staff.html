@@ -169,10 +169,10 @@
     <div class="page" id="page-compras">
       <div class="page-title"><span class="pt-icon">🛒</span> Registrar Compra</div>
       <div class="form-card">
-        <h3>Adicionar compra a um usuário (pelo ID do Discord)</h3>
+        <h3>Adicionar compra a um usuário (pelo email)</h3>
         <div class="msg" id="purchaseMsg"></div>
         <div class="form-row">
-          <input class="form-input" id="purchaseDiscordId" placeholder="ID do Discord do usuário" />
+          <input class="form-input" id="purchaseEmail" placeholder="Email do usuário" />
           <input class="form-input" id="purchaseScript" placeholder="Nome do script" />
           <input class="form-input" id="purchasePrice" placeholder="Preço (ex: R$ 49,90)" />
           <button class="btn-primary" onclick="addPurchase()">Registrar</button>
@@ -184,11 +184,11 @@
     <div class="page" id="page-staff">
       <div class="page-title"><span class="pt-icon">🛡️</span> Gerenciar Staff</div>
       <div class="form-card">
-        <h3>Adicionar novo staff pelo ID do Discord</h3>
+        <h3>Adicionar novo staff pelo email</h3>
         <div class="msg" id="staffMsg"></div>
         <div class="form-row">
-          <input class="form-input" id="newStaffId" placeholder="ID do Discord" />
-          <input class="form-input" id="newStaffLabel" placeholder="Nome/cargo (ex: Moderador)" />
+          <input class="form-input" id="newStaffId" placeholder="Email do usuário" />
+          <input class="form-input" id="newStaffLabel" placeholder="Cargo (ex: Moderador)" />
           <button class="btn-primary" onclick="addStaff()">Adicionar</button>
         </div>
       </div>
@@ -307,13 +307,13 @@ async function loadStaff() {
     const d = await r.json();
     const list = d.staff || [];
     document.getElementById('staffTable').innerHTML = `<table>
-      <thead><tr><th>Discord ID</th><th>Cargo</th><th>Adicionado em</th><th>Ação</th></tr></thead>
+      <thead><tr><th>Email</th><th>Cargo</th><th>Adicionado em</th><th>Ação</th></tr></thead>
       <tbody>
       ${list.map(s => `<tr>
-        <td class="td-mono">${esc(s.discord_id)}</td>
+        <td class="td-mono">${esc(s.email)}</td>
         <td>${esc(s.label||'Staff')}</td>
         <td class="td-mono">${new Date(s.added_at).toLocaleDateString('pt-BR')}</td>
-        <td>${s.discord_id === '1473070694425301205' ? '<span class="badge badge-red">Dono</span>' : `<button class="btn-danger btn-sm" onclick="removeStaff('${s.discord_id}')">Remover</button>`}</td>
+        <td>${s.email === 'ar39491@gmail.com' ? '<span class="badge badge-red">Dono</span>' : `<button class="btn-danger btn-sm" onclick="removeStaff('${s.email}')">Remover</button>`}</td>
       </tr>`).join('')}
       </tbody>
     </table>`;
@@ -321,23 +321,23 @@ async function loadStaff() {
 }
 
 async function addStaff() {
-  const id    = document.getElementById('newStaffId').value.trim();
+  const email = document.getElementById('newStaffId').value.trim();
   const label = document.getElementById('newStaffLabel').value.trim();
-  if (!id) { showMsg('staffMsg','error','Informe o ID do Discord.'); return; }
+  if (!email) { showMsg('staffMsg','error','Informe o email.'); return; }
   const r = await fetch('/staff/add', {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({ discord_id: id, label })
+    body: JSON.stringify({ email, label })
   });
   const d = await r.json();
   if (r.ok) { showMsg('staffMsg','success','Staff adicionado!'); document.getElementById('newStaffId').value=''; document.getElementById('newStaffLabel').value=''; loadStaff(); }
   else showMsg('staffMsg','error', d.error||'Erro.');
 }
 
-async function removeStaff(discord_id) {
+async function removeStaff(email) {
   if (!confirm('Remover este staff?')) return;
   const r = await fetch('/staff/remove', {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({ discord_id })
+    body: JSON.stringify({ email })
   });
   const d = await r.json();
   if (r.ok) loadStaff();
@@ -345,18 +345,18 @@ async function removeStaff(discord_id) {
 }
 
 async function addPurchase() {
-  const discord_id  = document.getElementById('purchaseDiscordId').value.trim();
+  const user_email  = document.getElementById('purchaseEmail').value.trim();
   const script_name = document.getElementById('purchaseScript').value.trim();
   const price       = document.getElementById('purchasePrice').value.trim();
-  if (!discord_id || !script_name || !price) { showMsg('purchaseMsg','error','Preencha todos os campos.'); return; }
+  if (!user_email || !script_name || !price) { showMsg('purchaseMsg','error','Preencha todos os campos.'); return; }
   const r = await fetch('/staff/purchase/add', {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({ discord_id, script_name, price })
+    body: JSON.stringify({ user_email, script_name, price })
   });
   const d = await r.json();
   if (r.ok) {
     showMsg('purchaseMsg','success','Compra registrada com sucesso!');
-    document.getElementById('purchaseDiscordId').value='';
+    document.getElementById('purchaseEmail').value='';
     document.getElementById('purchaseScript').value='';
     document.getElementById('purchasePrice').value='';
   } else showMsg('purchaseMsg','error', d.error||'Erro.');
