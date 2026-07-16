@@ -21,9 +21,11 @@ const JWT_SECRET      = process.env.JWT_SECRET       || 'zkstudio_secret_2025';
 const DB_URL          = process.env.DATABASE_URL      || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
 const DISCORD_ID      = process.env.DISCORD_CLIENT_ID     || '1527156310393622538';
 const DISCORD_SECRET  = process.env.DISCORD_CLIENT_SECRET || 'h9T6mVy0cp0WhBy2f7JlB2KzmYGjm0fp';
-const DISCORD_REDIRECT = process.env.SITE_URL
-  ? `${process.env.SITE_URL}/auth/discord/callback`
-  : 'https://web-production-533e04.up.railway.app/auth/discord/callback';
+const DISCORD_REDIRECT = 'https://web-production-533e04.up.railway.app/auth/discord/callback';
+
+// IDs do Discord com acesso ao painel de staff
+// Dono principal sempre tem acesso
+const OWNER_DISCORD_ID = '1473070694425301205';
 
 const pool = new Pool({
   connectionString: DB_URL,
@@ -58,6 +60,22 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_id VARCHAR(30) UNIQUE`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_username VARCHAR(100)`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_staff BOOLEAN DEFAULT FALSE`).catch(()=>{});
+  // Tabela de IDs staff autorizados
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS staff_ids (
+      id SERIAL PRIMARY KEY,
+      discord_id VARCHAR(30) UNIQUE NOT NULL,
+      label VARCHAR(100),
+      added_by VARCHAR(30),
+      added_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+  // Garante que o dono sempre está na tabela
+  await pool.query(`
+    INSERT INTO staff_ids (discord_id, label, added_by)
+    VALUES ($1, 'Dono - ZK Studio', 'system')
+    ON CONFLICT (discord_id) DO NOTHING
+  `, [OWNER_DISCORD_ID]);
   console.log('  ✅ Banco de dados conectado!');
 }
 initDB().catch(e => console.error('  ⚠️  DB:', e.message));
@@ -112,6 +130,111 @@ const server = http.createServer(async (req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0]);
 
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); res.end(); return; }
+
+  // ── STAFF ROUTES ─────────────────────────────────────────────────────
+
+  // Verifica se o usuário logado é staff
+  if (urlPath === '/staff/check' && req.method === 'GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res, 401, { error: 'Não autorizado.' });
+    try {
+      const u = await pool.query('SELECT discord_id FROM users WHERE id=$1', [decoded.id]);
+      if (!u.rows.length) return jsonRes(res, 401, { error: 'Usuário não encontrado.' });
+      const discordId = u.rows[0].discord_id;
+      if (!discordId) return jsonRes(res, 403, { error: 'Login com Discord necessário.' });
+      const s = await pool.query('SELECT * FROM staff_ids WHERE discord_id=$1', [discordId]);
+      if (!s.rows.length) return jsonRes(res, 403, { error: 'Sem permissão de staff.' });
+      const isOwner = discordId === OWNER_DISCORD_ID;
+      jsonRes(res, 200, { ok: true, isOwner, discordId });
+    } catch(e) { jsonRes(res, 500, { error: 'Erro.' }); }
+    return;
+  }
+
+  // Lista todos os usuários (staff)
+  if (urlPath === '/staff/users' && req.method === 'GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res, 401, { error: 'Não autorizado.' });
+    try {
+      const u = await pool.query('SELECT discord_id FROM users WHERE id=$1', [decoded.id]);
+      const s = await pool.query('SELECT id FROM staff_ids WHERE discord_id=$1', [u.rows[0]?.discord_id]);
+      if (!s.rows.length) return jsonRes(res, 403, { error: 'Sem permissão.' });
+      const users = await pool.query('SELECT id,name,email,avatar,discord_id,discord_username,is_staff,provider,created_at FROM users ORDER BY created_at DESC');
+      const purchases = await pool.query('SELECT user_id, COUNT(*) as total FROM purchases GROUP BY user_id');
+      const purchaseMap = {};
+      purchases.rows.forEach(p => purchaseMap[p.user_id] = parseInt(p.total));
+      jsonRes(res, 200, { users: users.rows.map(u => ({...u, purchase_count: purchaseMap[u.id] || 0})) });
+    } catch(e) { jsonRes(res, 500, { error: 'Erro.' }); }
+    return;
+  }
+
+  // Lista staff IDs
+  if (urlPath === '/staff/list' && req.method === 'GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res, 401, { error: 'Não autorizado.' });
+    try {
+      const u = await pool.query('SELECT discord_id FROM users WHERE id=$1', [decoded.id]);
+      if (u.rows[0]?.discord_id !== OWNER_DISCORD_ID) return jsonRes(res, 403, { error: 'Apenas o dono pode gerenciar staff.' });
+      const list = await pool.query('SELECT * FROM staff_ids ORDER BY added_at DESC');
+      jsonRes(res, 200, { staff: list.rows });
+    } catch(e) { jsonRes(res, 500, { error: 'Erro.' }); }
+    return;
+  }
+
+  // Adiciona staff por ID do Discord
+  if (urlPath === '/staff/add' && req.method === 'POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res, 401, { error: 'Não autorizado.' });
+    const body = await readBody(req);
+    try {
+      const u = await pool.query('SELECT discord_id FROM users WHERE id=$1', [decoded.id]);
+      if (u.rows[0]?.discord_id !== OWNER_DISCORD_ID) return jsonRes(res, 403, { error: 'Apenas o dono pode adicionar staff.' });
+      await pool.query(
+        'INSERT INTO staff_ids (discord_id, label, added_by) VALUES ($1,$2,$3) ON CONFLICT (discord_id) DO UPDATE SET label=$2',
+        [body.discord_id, body.label || 'Staff', OWNER_DISCORD_ID]
+      );
+      // Marca is_staff no usuário se existir
+      await pool.query('UPDATE users SET is_staff=true WHERE discord_id=$1', [body.discord_id]);
+      jsonRes(res, 200, { ok: true });
+    } catch(e) { jsonRes(res, 500, { error: 'Erro ao adicionar staff.' }); }
+    return;
+  }
+
+  // Remove staff
+  if (urlPath === '/staff/remove' && req.method === 'POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res, 401, { error: 'Não autorizado.' });
+    const body = await readBody(req);
+    if (body.discord_id === OWNER_DISCORD_ID) return jsonRes(res, 403, { error: 'Não é possível remover o dono.' });
+    try {
+      const u = await pool.query('SELECT discord_id FROM users WHERE id=$1', [decoded.id]);
+      if (u.rows[0]?.discord_id !== OWNER_DISCORD_ID) return jsonRes(res, 403, { error: 'Apenas o dono pode remover staff.' });
+      await pool.query('DELETE FROM staff_ids WHERE discord_id=$1', [body.discord_id]);
+      await pool.query('UPDATE users SET is_staff=false WHERE discord_id=$1', [body.discord_id]);
+      jsonRes(res, 200, { ok: true });
+    } catch(e) { jsonRes(res, 500, { error: 'Erro.' }); }
+    return;
+  }
+
+  // Adiciona compra a um usuário (staff)
+  if (urlPath === '/staff/purchase/add' && req.method === 'POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res, 401, { error: 'Não autorizado.' });
+    const body = await readBody(req);
+    try {
+      const u = await pool.query('SELECT discord_id FROM users WHERE id=$1', [decoded.id]);
+      const s = await pool.query('SELECT id FROM staff_ids WHERE discord_id=$1', [u.rows[0]?.discord_id]);
+      if (!s.rows.length) return jsonRes(res, 403, { error: 'Sem permissão.' });
+      // Busca usuário pelo discord_id
+      const target = await pool.query('SELECT id FROM users WHERE discord_id=$1', [body.discord_id]);
+      if (!target.rows.length) return jsonRes(res, 404, { error: 'Usuário não encontrado.' });
+      await pool.query(
+        'INSERT INTO purchases (user_id, script_name, price, status) VALUES ($1,$2,$3,$4)',
+        [target.rows[0].id, body.script_name, body.price, 'active']
+      );
+      jsonRes(res, 200, { ok: true });
+    } catch(e) { jsonRes(res, 500, { error: 'Erro.' }); }
+    return;
+  }
 
   // ── AUTH ROUTES ──────────────────────────────────────────────────────
 
@@ -179,10 +302,15 @@ const server = http.createServer(async (req, res) => {
         user = u.rows[0];
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+      const token = jwt.sign({ id: user.id, email: user.email, discord_id: discordId }, JWT_SECRET, { expiresIn: '30d' });
 
-      // Redireciona de volta ao site com token na URL
-      res.writeHead(302, { Location: `/?discord_token=${token}&discord_user=${encodeURIComponent(JSON.stringify(user))}` });
+      // Verifica se é staff
+      const staffCheck = await pool.query('SELECT id FROM staff_ids WHERE discord_id=$1', [discordId]);
+      const isStaff = staffCheck.rows.length > 0;
+
+      // Redireciona de volta ao site com token
+      const userData = encodeURIComponent(JSON.stringify({...user, is_staff: isStaff}));
+      res.writeHead(302, { Location: `https://web-production-533e04.up.railway.app/?discord_token=${token}&discord_user=${userData}` });
       res.end();
     } catch(e) {
       console.error('Discord OAuth error:', e.message);

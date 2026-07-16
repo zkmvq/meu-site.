@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZK Studio — Painel Staff</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue:#1A56DB;--blue-light:#4F8EF7;--blue-bright:#60A5FA;
+      --blue-dark:#1239A8;--bg:#03081C;--bg2:#050C24;--bg3:#07102E;
+      --card:#081230;--card-border:#162050;--text:#CBD5E1;
+      --text-muted:#64748B;--white:#F1F5FF;--green:#22C55E;--red:#EF4444;
+      --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;}
+    .bg-glow{position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);z-index:0;}
+    .bg-glow-1{width:600px;height:600px;background:rgba(26,86,219,0.08);top:-200px;left:-200px;}
+    .bg-glow-2{width:500px;height:500px;background:rgba(26,86,219,0.06);bottom:-150px;right:-150px;}
+    /* NAVBAR */
+    .navbar{background:rgba(3,8,28,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(26,86,219,0.2);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:60px;position:sticky;top:0;z-index:100;flex-shrink:0;}
+    .navbar img{height:38px;}
+    .navbar-title{font-size:0.85rem;font-weight:700;color:var(--white);margin-left:0.5rem;}
+    .navbar-badge{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);font-size:0.65rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px;letter-spacing:0.1em;}
+    .navbar-right{margin-left:auto;display:flex;align-items:center;gap:1rem;}
+    .nav-user{display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--text-muted);}
+    .nav-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;overflow:hidden;}
+    .nav-avatar img{width:100%;height:100%;object-fit:cover;}
+    .btn-logout{background:none;border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-logout:hover{background:rgba(239,68,68,0.1);}
+    /* LAYOUT */
+    .layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;}
+    /* SIDEBAR */
+    .sidebar{width:220px;background:var(--bg2);border-right:1px solid rgba(26,86,219,0.12);padding:1.5rem 0;flex-shrink:0;}
+    .sidebar-item{display:flex;align-items:center;gap:0.7rem;padding:0.7rem 1.5rem;color:var(--text-muted);font-size:0.83rem;font-weight:600;cursor:pointer;transition:all 0.2s;border-left:2px solid transparent;}
+    .sidebar-item:hover{color:var(--blue-bright);background:rgba(26,86,219,0.06);}
+    .sidebar-item.active{color:var(--blue-bright);background:rgba(26,86,219,0.08);border-left-color:var(--blue-bright);}
+    .sidebar-item .si-icon{font-size:1.1rem;flex-shrink:0;}
+    .sidebar-sep{height:1px;background:rgba(26,86,219,0.1);margin:0.8rem 1.5rem;}
+    /* CONTENT */
+    .content{flex:1;overflow-y:auto;padding:2rem;}
+    .content::-webkit-scrollbar{width:4px;}
+    .content::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+    .page{display:none;}
+    .page.active{display:block;}
+    /* CARDS */
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;}
+    .stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:1.2rem 1.5rem;}
+    .stat-card .sc-num{font-size:2rem;font-weight:900;color:var(--blue-bright);font-family:var(--mono);}
+    .stat-card .sc-label{font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.3rem;}
+    /* PAGE TITLE */
+    .page-title{font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:1.5rem;display:flex;align-items:center;gap:0.7rem;}
+    .page-title .pt-icon{font-size:1.4rem;}
+    /* TABLE */
+    .table-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:14px;overflow:hidden;}
+    table{width:100%;border-collapse:collapse;}
+    th{background:var(--bg3);padding:0.75rem 1rem;font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;text-align:left;border-bottom:1px solid var(--card-border);}
+    td{padding:0.85rem 1rem;font-size:0.83rem;border-bottom:1px solid rgba(22,32,80,0.5);vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:rgba(26,86,219,0.04);}
+    .td-avatar{display:flex;align-items:center;gap:0.6rem;}
+    .td-avatar-img{width:30px;height:30px;border-radius:50%;object-fit:cover;background:var(--bg3);}
+    .td-name{font-weight:600;color:var(--white);}
+    .td-mono{font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);}
+    .badge{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.68rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px;}
+    .badge-green{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
+    .badge-blue{background:rgba(26,86,219,0.12);color:var(--blue-bright);border:1px solid rgba(26,86,219,0.25);}
+    .badge-red{background:rgba(239,68,68,0.12);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25);}
+    /* FORM */
+    .form-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;}
+    .form-card h3{font-size:0.9rem;font-weight:700;color:var(--white);margin-bottom:1rem;}
+    .form-row{display:flex;gap:0.8rem;flex-wrap:wrap;}
+    .form-input{flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;transition:border-color 0.2s;}
+    .form-input:focus{outline:none;border-color:var(--blue);}
+    .form-input::placeholder{color:var(--text-muted);}
+    .btn-primary{background:var(--blue);color:#fff;border:none;padding:0.65rem 1.3rem;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;white-space:nowrap;}
+    .btn-primary:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
+    .btn-danger{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-danger:hover{background:rgba(239,68,68,0.25);}
+    .btn-sm{padding:0.35rem 0.8rem;font-size:0.75rem;}
+    /* MSG */
+    .msg{padding:0.7rem 1rem;border-radius:8px;font-size:0.82rem;margin-bottom:1rem;display:none;}
+    .msg.show{display:block;}
+    .msg.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#86EFAC;}
+    .msg.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#FCA5A5;}
+    /* LOADING */
+    .loading{text-align:center;padding:3rem;color:var(--text-muted);font-size:0.9rem;}
+    /* BLOQUEADO */
+    #blocked{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
+    #blocked .bl-icon{font-size:4rem;}
+    #blocked h2{color:var(--white);font-size:1.3rem;}
+    #blocked p{color:var(--text-muted);font-size:0.88rem;}
+    .btn-discord{display:inline-flex;align-items:center;gap:0.6rem;background:#5865F2;color:#fff;border:none;padding:0.8rem 1.8rem;border-radius:9px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;text-decoration:none;}
+    .btn-discord:hover{background:#4752c4;box-shadow:0 0 24px rgba(88,101,242,0.4);}
+  </style>
+</head>
+<body>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />
+  <span class="navbar-title">Painel Staff</span>
+  <span class="navbar-badge">RESTRITO</span>
+  <div class="navbar-right">
+    <div class="nav-user">
+      <div class="nav-avatar" id="navAvatar">?</div>
+      <span id="navName">Carregando...</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</nav>
+
+<!-- BLOQUEADO -->
+<div id="blocked">
+  <div class="bl-icon">🔒</div>
+  <h2>Acesso Restrito</h2>
+  <p>Este painel é exclusivo para staff autorizado.<br>Faça login com o Discord para continuar.</p>
+  <a href="/auth/discord" class="btn-discord">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.079.11 18.1.128 18.113a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+    Entrar com Discord
+  </a>
+</div>
+
+<!-- LAYOUT PRINCIPAL -->
+<div class="layout" id="mainLayout" style="display:none">
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showPage('dashboard')" data-page="dashboard">
+      <span class="si-icon">📊</span> Dashboard
+    </div>
+    <div class="sidebar-item" onclick="showPage('usuarios')" data-page="usuarios">
+      <span class="si-icon">👥</span> Usuários
+    </div>
+    <div class="sidebar-item" onclick="showPage('compras')" data-page="compras">
+      <span class="si-icon">🛒</span> Compras
+    </div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-item" id="sidebarStaff" onclick="showPage('staff')" data-page="staff" style="display:none">
+      <span class="si-icon">🛡️</span> Gerenciar Staff
+    </div>
+    <div class="sidebar-item" onclick="window.location.href='/'">
+      <span class="si-icon">🌐</span> Ver Site
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title"><span class="pt-icon">📊</span> Dashboard</div>
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card"><div class="sc-num" id="statUsers">-</div><div class="sc-label">Usuários</div></div>
+        <div class="stat-card"><div class="sc-num" id="statDiscord">-</div><div class="sc-label">Via Discord</div></div>
+        <div class="stat-card"><div class="sc-num" id="statPurchases">-</div><div class="sc-label">Compras Totais</div></div>
+        <div class="stat-card"><div class="sc-num" id="statStaff">-</div><div class="sc-label">Staff Ativos</div></div>
+      </div>
+      <div class="page-title" style="font-size:1rem;margin-top:1rem"><span class="pt-icon">🕐</span> Últimos Usuários</div>
+      <div class="table-wrap" id="recentUsers"><div class="loading">Carregando...</div></div>
+    </div>
+
+    <!-- USUÁRIOS -->
+    <div class="page" id="page-usuarios">
+      <div class="page-title"><span class="pt-icon">👥</span> Usuários</div>
+      <div class="table-wrap" id="usersTable"><div class="loading">Carregando...</div></div>
+    </div>
+
+    <!-- COMPRAS -->
+    <div class="page" id="page-compras">
+      <div class="page-title"><span class="pt-icon">🛒</span> Registrar Compra</div>
+      <div class="form-card">
+        <h3>Adicionar compra a um usuário (pelo ID do Discord)</h3>
+        <div class="msg" id="purchaseMsg"></div>
+        <div class="form-row">
+          <input class="form-input" id="purchaseDiscordId" placeholder="ID do Discord do usuário" />
+          <input class="form-input" id="purchaseScript" placeholder="Nome do script" />
+          <input class="form-input" id="purchasePrice" placeholder="Preço (ex: R$ 49,90)" />
+          <button class="btn-primary" onclick="addPurchase()">Registrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="page" id="page-staff">
+      <div class="page-title"><span class="pt-icon">🛡️</span> Gerenciar Staff</div>
+      <div class="form-card">
+        <h3>Adicionar novo staff pelo ID do Discord</h3>
+        <div class="msg" id="staffMsg"></div>
+        <div class="form-row">
+          <input class="form-input" id="newStaffId" placeholder="ID do Discord" />
+          <input class="form-input" id="newStaffLabel" placeholder="Nome/cargo (ex: Moderador)" />
+          <button class="btn-primary" onclick="addStaff()">Adicionar</button>
+        </div>
+      </div>
+      <div class="page-title" style="font-size:1rem"><span class="pt-icon">👮</span> Staff Atual</div>
+      <div class="table-wrap" id="staffTable"><div class="loading">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('zk_token');
+let isOwner = false;
+let allUsers = [];
+
+async function init() {
+  if (!token) { showBlocked(); return; }
+  try {
+    const r = await fetch('/staff/check', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    if (!r.ok) { showBlocked(); return; }
+    isOwner = d.isOwner;
+    // Mostra layout principal
+    document.getElementById('blocked').style.display = 'none';
+    document.getElementById('mainLayout').style.display = 'flex';
+    if (isOwner) document.getElementById('sidebarStaff').style.display = 'flex';
+    // Carrega perfil
+    const me = await fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
+    if (me.user) {
+      const av = document.getElementById('navAvatar');
+      if (me.user.avatar) av.innerHTML = `<img src="${me.user.avatar}" />`;
+      else av.textContent = me.user.name.charAt(0).toUpperCase();
+      document.getElementById('navName').textContent = me.user.name.split(' ')[0];
+    }
+    loadDashboard();
+  } catch { showBlocked(); }
+}
+
+function showBlocked() {
+  document.getElementById('blocked').style.display = 'flex';
+  document.getElementById('mainLayout').style.display = 'none';
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector(`[data-page="${name}"]`)?.classList.add('active');
+  if (name === 'usuarios') loadUsers();
+  if (name === 'staff') loadStaff();
+}
+
+async function loadDashboard() {
+  try {
+    const r = await fetch('/staff/users', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    allUsers = d.users || [];
+    const discord = allUsers.filter(u => u.provider === 'discord').length;
+    const purchases = allUsers.reduce((s,u) => s + (u.purchase_count||0), 0);
+    document.getElementById('statUsers').textContent     = allUsers.length;
+    document.getElementById('statDiscord').textContent   = discord;
+    document.getElementById('statPurchases').textContent = purchases;
+    // Staff count
+    if (isOwner) {
+      const sr = await fetch('/staff/list', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
+      document.getElementById('statStaff').textContent = sr.staff?.length || 0;
+    } else {
+      document.getElementById('statStaff').textContent = '-';
+    }
+    // Recentes
+    const recent = allUsers.slice(0, 8);
+    document.getElementById('recentUsers').innerHTML = renderUsersTable(recent, false);
+  } catch(e) { console.error(e); }
+}
+
+async function loadUsers() {
+  document.getElementById('usersTable').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const r = await fetch('/staff/users', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    allUsers = d.users || [];
+    document.getElementById('usersTable').innerHTML = renderUsersTable(allUsers, true);
+  } catch { document.getElementById('usersTable').innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+
+function renderUsersTable(users, full) {
+  if (!users.length) return '<div class="loading">Nenhum usuário encontrado.</div>';
+  return `<table>
+    <thead><tr>
+      <th>Usuário</th>
+      <th>Discord ID</th>
+      <th>Método</th>
+      <th>Compras</th>
+      <th>Cadastro</th>
+      ${full ? '<th>Staff</th>' : ''}
+    </tr></thead>
+    <tbody>
+    ${users.map(u => `<tr>
+      <td><div class="td-avatar">
+        ${u.avatar ? `<img class="td-avatar-img" src="${u.avatar}" />` : `<div class="td-avatar-img" style="background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;">${u.name.charAt(0).toUpperCase()}</div>`}
+        <span class="td-name">${esc(u.name)}</span>
+      </div></td>
+      <td><span class="td-mono">${u.discord_id || '-'}</span></td>
+      <td><span class="badge ${u.provider==='discord'?'badge-blue':'badge-green'}">${u.provider==='discord'?'Discord':'Email'}</span></td>
+      <td><span class="badge badge-blue">${u.purchase_count || 0}</span></td>
+      <td class="td-mono">${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
+      ${full ? `<td>${u.is_staff ? '<span class="badge badge-red">✓ Staff</span>' : '-'}</td>` : ''}
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function loadStaff() {
+  document.getElementById('staffTable').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const r = await fetch('/staff/list', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    const list = d.staff || [];
+    document.getElementById('staffTable').innerHTML = `<table>
+      <thead><tr><th>Discord ID</th><th>Cargo</th><th>Adicionado em</th><th>Ação</th></tr></thead>
+      <tbody>
+      ${list.map(s => `<tr>
+        <td class="td-mono">${esc(s.discord_id)}</td>
+        <td>${esc(s.label||'Staff')}</td>
+        <td class="td-mono">${new Date(s.added_at).toLocaleDateString('pt-BR')}</td>
+        <td>${s.discord_id === '1473070694425301205' ? '<span class="badge badge-red">Dono</span>' : `<button class="btn-danger btn-sm" onclick="removeStaff('${s.discord_id}')">Remover</button>`}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>`;
+  } catch { document.getElementById('staffTable').innerHTML = '<div class="loading">Erro.</div>'; }
+}
+
+async function addStaff() {
+  const id    = document.getElementById('newStaffId').value.trim();
+  const label = document.getElementById('newStaffLabel').value.trim();
+  if (!id) { showMsg('staffMsg','error','Informe o ID do Discord.'); return; }
+  const r = await fetch('/staff/add', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ discord_id: id, label })
+  });
+  const d = await r.json();
+  if (r.ok) { showMsg('staffMsg','success','Staff adicionado!'); document.getElementById('newStaffId').value=''; document.getElementById('newStaffLabel').value=''; loadStaff(); }
+  else showMsg('staffMsg','error', d.error||'Erro.');
+}
+
+async function removeStaff(discord_id) {
+  if (!confirm('Remover este staff?')) return;
+  const r = await fetch('/staff/remove', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ discord_id })
+  });
+  const d = await r.json();
+  if (r.ok) loadStaff();
+  else alert(d.error||'Erro.');
+}
+
+async function addPurchase() {
+  const discord_id  = document.getElementById('purchaseDiscordId').value.trim();
+  const script_name = document.getElementById('purchaseScript').value.trim();
+  const price       = document.getElementById('purchasePrice').value.trim();
+  if (!discord_id || !script_name || !price) { showMsg('purchaseMsg','error','Preencha todos os campos.'); return; }
+  const r = await fetch('/staff/purchase/add', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ discord_id, script_name, price })
+  });
+  const d = await r.json();
+  if (r.ok) {
+    showMsg('purchaseMsg','success','Compra registrada com sucesso!');
+    document.getElementById('purchaseDiscordId').value='';
+    document.getElementById('purchaseScript').value='';
+    document.getElementById('purchasePrice').value='';
+  } else showMsg('purchaseMsg','error', d.error||'Erro.');
+}
+
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = 'msg '+type+' show';
+  el.textContent = text;
+  setTimeout(() => el.className='msg', 4000);
+}
+
+function logout() {
+  localStorage.removeItem('zk_token');
+  localStorage.removeItem('zk_user');
+  window.location.href = '/';
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+init();
+</script>
+</body>
+</html>
