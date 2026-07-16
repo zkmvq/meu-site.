@@ -4,9 +4,9 @@
     "descricao": "Scripts premium para elevar seu servidor FiveM."
   },
   "discord": {
-    "client_id": "SEU_CLIENT_ID",
-    "client_secret": "SEU_CLIENT_SECRET",
-    "redirect_uri": "https://seu-site.up.railway.app/auth/discord/callback"
+    "client_id": "1527156310393622538",
+    "client_secret": "gcM1GXqVNSlAiD2UI17bMPTaWJnshgUF",
+    "redirect_uri": "https://zkstudio-production-32185.up.railway.app/auth/discord/callback"
   },
   "contato": {
     "discord": "https://discord.gg/9BFJTzExWK",
