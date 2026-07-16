@@ -5,7 +5,7 @@
   },
   "discord": {
     "client_id": "1527156310393622538",
-    "client_secret": "gcM1GXqVNSlAiD2UI17bMPTaWJnshgUF",
+    "client_secret": "GLwh_j-N3pey_QLSyn9aG1jld-pwpQdb",
     "redirect_uri": "https://zkstudio-production-32185.up.railway.app/auth/discord/callback",
     "bot_token": "USAR_BOT_TOKEN_NA_VARIÁVEL_DE_AMBIENTE",
     "ticket_category_id": "1522437463036137602"
