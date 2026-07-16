@@ -145,8 +145,6 @@ carregarConfig();
     })
     .catch(() => {});
 })();
-    .catch(() => {}); // mantém "Entrar" em caso de erro
-})();
 
 
 window.addEventListener('scroll', () => {
