@@ -4,8 +4,6 @@
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
-// fetch nativo no Node 18+; fallback para versões antigas
-const _fetch = globalThis.fetch || require('https').get;
 
 const PORT       = process.env.PORT || 80;
 const PUBLIC_DIR = path.join(__dirname, 'public');
