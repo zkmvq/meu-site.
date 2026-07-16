@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -38,9 +37,6 @@
       </ul>
       <!-- AUTH BUTTON -->
       <div id="navAuthBtn" style="display:flex; align-items:center; gap:0.6rem;">
-        <button class="btn-nav-login" id="navCartBtn" onclick="openCart()" style="position:relative;cursor:pointer;">
-          🛒 <span id="cartCount" style="display:none;position:absolute;top:-6px;right:-8px;background:var(--blue);color:#fff;font-size:0.6rem;font-weight:800;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;">0</span>
-        </button>
         <a href="/suporte.html" class="btn-nav-login" id="navSupportBtn" style="display:none">Suporte</a>
         <a href="/auth.html" class="btn-nav-login" id="navLoginBtn">Entrar</a>
         <a href="/profile.html" class="btn-nav-user" id="navUserBtn" style="display:none">
@@ -174,7 +170,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>NUI</span></div>
           <div class="card-footer">
             <span class="price">R$ 49,90</span>
-            <button class="btn-comprar" onclick="addToCart('Paineis Personalizados','R$ 49,90')">Comprar</button>
+            <button class="btn-comprar" onclick="window.open('https://discord.gg/9BFJTzExWK','_blank')">Comprar</button>
           </div>
         </div>
 
@@ -186,7 +182,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>SQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 39,90</span>
-            <button class="btn-comprar" onclick="addToCart('Sistema de Prisão','R$ 39,90')">Comprar</button>
+            <button class="btn-comprar" onclick="window.open('https://discord.gg/9BFJTzExWK','_blank')">Comprar</button>
           </div>
         </div>
 
@@ -198,7 +194,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>MySQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 59,90</span>
-            <button class="btn-comprar" onclick="addToCart('Economy System','R$ 59,90')">Comprar</button>
+            <button class="btn-comprar" onclick="window.open('https://discord.gg/9BFJTzExWK','_blank')">Comprar</button>
           </div>
         </div>
 
@@ -210,7 +206,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>SQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 69,90</span>
-            <button class="btn-comprar" onclick="addToCart('Sistema Peds','R$ 69,90')">Comprar</button>
+            <button class="btn-comprar" onclick="window.open('https://discord.gg/9BFJTzExWK','_blank')">Comprar</button>
           </div>
         </div>
 
@@ -222,7 +218,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>NUI</span></div>
           <div class="card-footer">
             <span class="price">R$ 44,90</span>
-            <button class="btn-comprar" onclick="addToCart('Anti-cheater','R$ 44,90')">Comprar</button>
+            <button class="btn-comprar" onclick="window.open('https://discord.gg/9BFJTzExWK','_blank')">Comprar</button>
           </div>
         </div>
 
@@ -234,7 +230,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>MySQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 79,90</span>
-            <button class="btn-comprar" onclick="addToCart('Job System','R$ 79,90')">Comprar</button>
+            <button class="btn-comprar" onclick="window.open('https://discord.gg/9BFJTzExWK','_blank')">Comprar</button>
           </div>
         </div>
 
@@ -392,68 +388,6 @@
       <p data-text="copyright">© 2025 ZK Studio. Todos os direitos reservados.</p>
     </div>
   </footer>
-
-  <!-- MODAL CHECKOUT -->
-  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
-    <div class="modal" onclick="event.stopPropagation()">
-      <button class="modal-close" onclick="closeModal()">✕</button>
-      <div id="checkoutStep1">
-        <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK Studio" class="modal-logo" />
-        <h3>Finalizar Compra</h3>
-        <p class="modal-desc" id="checkoutTotal"></p>
-        <div class="checkout-form">
-          <input class="checkout-input" id="checkoutName" placeholder="Seu nome completo" required />
-          <input class="checkout-input" id="checkoutEmail" placeholder="Seu email" type="email" />
-          <input class="checkout-input" id="checkoutDoc" placeholder="CPF ou CNPJ (opcional)" />
-          <button class="btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem;" onclick="generatePix()">
-            Gerar PIX
-          </button>
-        </div>
-      </div>
-      <div id="checkoutStep2" style="display:none;">
-        <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK Studio" class="modal-logo" />
-        <h3>Pague via PIX</h3>
-        <p class="modal-desc" style="margin-bottom:0.5rem;">Escaneie o QR Code ou copie o código PIX abaixo</p>
-        <p class="modal-price" id="pixAmount" style="font-size:1.6rem;margin-bottom:0.8rem;"></p>
-        <div id="qrCodeContainer" style="display:flex;justify-content:center;margin-bottom:1rem;"></div>
-        <div class="pix-copy-box" onclick="copyPixCode()">
-          <span class="pix-copy-label">Clique para copiar o código PIX:</span>
-          <div class="pix-copy-code" id="pixCopyCode"></div>
-        </div>
-        <div class="pix-waiting">
-          <span class="pix-waiting-dot"></span> Aguardando pagamento...
-        </div>
-        <button class="btn-secondary" style="width:100%;justify-content:center;margin-top:0.8rem;font-size:0.75rem;" onclick="closeModal()">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CARRINHO OVERLAY -->
-  <div class="cart-overlay" id="cartOverlay" onclick="closeCart()">
-    <div class="cart-panel" onclick="event.stopPropagation()">
-      <div class="cart-header">
-        <h3>🛒 Carrinho</h3>
-        <button class="cart-close" onclick="closeCart()">✕</button>
-      </div>
-      <div class="cart-items" id="cartItems">
-        <div class="cart-empty">Seu carrinho está vazio.</div>
-      </div>
-      <div class="cart-footer" id="cartFooter" style="display:none;">
-        <div class="cart-coupon-row">
-          <input class="cart-coupon-input" id="cartCouponInput" placeholder="Cupom de desconto" />
-          <button class="cart-coupon-btn" onclick="applyCoupon()">Aplicar</button>
-        </div>
-        <div class="cart-coupon-msg" id="cartCouponMsg"></div>
-        <div class="cart-discount" id="cartDiscount" style="display:none;"></div>
-        <div class="cart-total-row">
-          <span>Total</span>
-          <span id="cartTotal">R$ 0,00</span>
-        </div>
-        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="checkoutCart()">Finalizar Compra</button>
-        <button class="cart-clear-btn" onclick="clearCart()">Limpar Carrinho</button>
-      </div>
-    </div>
-  </div>
 
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
