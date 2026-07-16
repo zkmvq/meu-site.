@@ -19,7 +19,7 @@ const JWT_SECRET      = process.env.JWT_SECRET       || 'zkstudio_secret_2025';
 const DB_URL          = process.env.DATABASE_URL      || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
 const DISCORD_ID      = process.env.DISCORD_CLIENT_ID     || '1527156310393622538';
 const DISCORD_SECRET  = process.env.DISCORD_CLIENT_SECRET || 'h9T6mVy0cp0WhBy2f7JlB2KzmYGjm0fp';
-const DISCORD_REDIRECT = 'https://zkstudio-production-32185.up.railway.app/auth/discord/callback';
+const DISCORD_REDIRECT = process.env.DISCORD_REDIRECT_URI || 'https://zkstudio-production-32185.up.railway.app/auth/discord/callback';
 
 // IDs do Discord com acesso ao painel de staff
 // Dono principal sempre tem acesso
