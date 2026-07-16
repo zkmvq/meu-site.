@@ -12,35 +12,6 @@
   }
 })();
 
-// ── NAVBAR AUTH ───────────────────────────────────────────────────────
-(function initNavAuth() {
-  const loginBtn = document.getElementById('navLoginBtn');
-  const userBtn  = document.getElementById('navUserBtn');
-  const avatar   = document.getElementById('navUserAvatar');
-  const nameEl   = document.getElementById('navUserName');
-  if (!loginBtn) return;
-
-  const token = localStorage.getItem('zk_token');
-  if (!token) return;
-
-  fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } })
-    .then(r => r.ok ? r.json() : null)
-    .then(d => {
-      if (!d || !d.user) { localStorage.removeItem('zk_token'); return; }
-      loginBtn.style.display = 'none';
-      userBtn.style.display  = 'inline-flex';
-      // Avatar: imagem do Discord ou inicial do nome
-      if (d.user.avatar) {
-        avatar.innerHTML = `<img src="${d.user.avatar}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;" />`;
-      } else {
-        avatar.textContent = d.user.name.charAt(0).toUpperCase();
-      }
-      nameEl.textContent = d.user.name.split(' ')[0];
-      localStorage.setItem('zk_user', JSON.stringify(d.user));
-    })
-    .catch(() => {});
-})();
-
 // ── CURSOR COM DELAY ──────────────────────────────────────────────────
 (function initCursor() {
   const dot  = document.getElementById('cursor-dot');
@@ -144,6 +115,7 @@ carregarConfig();
   const userBtn  = document.getElementById('navUserBtn');
   const avatar   = document.getElementById('navUserAvatar');
   const nameEl   = document.getElementById('navUserName');
+  const supportBtn = document.getElementById('navSupportBtn');
   if (!loginBtn) return;
 
   const token = localStorage.getItem('zk_token');
@@ -160,6 +132,7 @@ carregarConfig();
       // Logado — troca para nome do usuário
       loginBtn.style.display = 'none';
       userBtn.style.display  = 'inline-flex';
+      if (supportBtn) supportBtn.style.display = 'inline-flex';
       avatar.textContent     = d.user.name.charAt(0).toUpperCase();
       nameEl.textContent     = d.user.name.split(' ')[0];
       localStorage.setItem('zk_user', JSON.stringify(d.user));
@@ -431,156 +404,4 @@ function enviarMensagem(e) {
 })();
 
 
-// ==============================
-//   WIDGET DE SUPORTE — CHAT
-// ==============================
-(function() {
-  let chatOpen    = false;
-  let sessionId   = null;
-  let msgCount    = 0;
-  let polling     = false;
-  let chatClosed  = false;
 
-  window.toggleChat = function() {
-    chatOpen = !chatOpen;
-    const box   = document.getElementById('chat-box');
-    const badge = document.getElementById('chat-unread-badge');
-    box.style.display = chatOpen ? 'flex' : 'none';
-    if (chatOpen) {
-      badge.style.display = 'none';
-      if (sessionId) {
-        setTimeout(() => {
-          const el = document.getElementById('chat-messages');
-          if (el) el.scrollTop = el.scrollHeight;
-          document.getElementById('chat-input')?.focus();
-        }, 100);
-      }
-    }
-    // Troca ícone
-    const icon = document.getElementById('chat-toggle-icon');
-    icon.innerHTML = chatOpen
-      ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>`
-      : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
-  };
-
-  window.iniciarChat = async function() {
-    const name = document.getElementById('chat-name-input').value.trim() || 'Visitante';
-    try {
-      const r = await fetch('/chat/start', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ name })
-      });
-      const data = await r.json();
-      sessionId = data.id;
-
-      // Troca telas
-      document.getElementById('chat-start-screen').style.display   = 'none';
-      document.getElementById('chat-active-screen').style.display  = 'flex';
-
-      // Inicia polling
-      startPolling();
-      setTimeout(() => document.getElementById('chat-input')?.focus(), 100);
-    } catch(e) {
-      alert('Não foi possível conectar ao suporte. Tente novamente.');
-    }
-  };
-
-  window.enviarMensagem = async function() {
-    if (!sessionId || chatClosed) return;
-    const inp  = document.getElementById('chat-input');
-    const text = inp.value.trim();
-    if (!text) return;
-    inp.value = '';
-    inp.style.height = '';
-
-    // Adiciona mensagem localmente já
-    addMsg({ from:'visitor', text, time: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) });
-
-    try {
-      await fetch('/chat/send', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ id: sessionId, text })
-      });
-    } catch(e) {}
-  };
-
-  window.chatKeyDown = function(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensagem(); }
-  };
-
-  window.chatAutoResize = function(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-  };
-
-  function addMsg(msg) {
-    const container = document.getElementById('chat-messages');
-    if (!container) return;
-    const div = document.createElement('div');
-    div.className = `cb-msg from-${msg.from}`;
-    div.innerHTML = `
-      <div class="cb-msg-avatar">
-        ${msg.from === 'admin'
-          ? '<img src="../LOGOS DO SITE/ZK STUDIO SEM FUNDO.png" alt="ZK" />'
-          : '👤'}
-      </div>
-      <div>
-        <div class="cb-msg-bubble">${escapeHtml(msg.text)}</div>
-        <div class="cb-msg-time">${msg.time}</div>
-      </div>`;
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
-
-    // Notifica se chat estiver fechado
-    if (!chatOpen && msg.from === 'admin') {
-      const badge = document.getElementById('chat-unread-badge');
-      badge.style.display = 'flex';
-      badge.textContent = parseInt(badge.textContent || '0') + 1;
-      playBip();
-    }
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-  }
-
-  function playBip() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator(); const g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = 660; g.gain.setValueAtTime(0.2, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-      o.start(); o.stop(ctx.currentTime + 0.25);
-    } catch(_) {}
-  }
-
-  function startPolling() {
-    if (polling) return;
-    polling = true;
-    pollMessages();
-  }
-
-  async function pollMessages() {
-    if (!sessionId) return;
-    try {
-      const r = await fetch(`/chat/poll?id=${sessionId}&idx=${msgCount}`);
-      const msgs = await r.json();
-      // Só renderiza mensagens novas
-      if (msgs.length > msgCount) {
-        for (let i = msgCount; i < msgs.length; i++) {
-          // Evita duplicar mensagens do próprio visitante (já adicionadas localmente)
-          if (msgs[i].from === 'admin') addMsg(msgs[i]);
-          // Verifica se a sessão foi encerrada
-          if (msgs[i].from === 'admin' && msgs[i].text.includes('encerrada')) {
-            chatClosed = true;
-            document.getElementById('chat-input-wrap').style.display = 'none';
-            document.getElementById('chat-closed-notice').style.display = 'block';
-          }
-        }
-        msgCount = msgs.length;
-      }
-    } catch(e) {}
-    if (!chatClosed) setTimeout(pollMessages, 300);
-  }
-})();

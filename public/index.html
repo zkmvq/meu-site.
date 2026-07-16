@@ -41,6 +41,7 @@
       </a>
       <!-- AUTH BUTTON -->
       <div id="navAuthBtn" style="display:flex; align-items:center; gap:0.6rem;">
+        <a href="/suporte.html" class="btn-nav-login" id="navSupportBtn" style="display:none">Suporte</a>
         <a href="/auth.html" class="btn-nav-login" id="navLoginBtn">Entrar</a>
         <a href="/profile.html" class="btn-nav-user" id="navUserBtn" style="display:none">
           <span class="nav-user-avatar" id="navUserAvatar">?</span>
@@ -410,70 +411,7 @@
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
 
-  <!-- WIDGET DE SUPORTE -->
-  <div id="chat-widget">
-    <!-- Botão flutuante -->
-    <button id="chat-toggle" onclick="toggleChat()" aria-label="Suporte">
-      <span id="chat-toggle-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      </span>
-      <span id="chat-unread-badge" style="display:none">1</span>
-    </button>
 
-    <!-- Janela do chat -->
-    <div id="chat-box" class="chat-box" style="display:none">
-      <!-- Header -->
-      <div class="cb-header">
-        <div class="cb-header-info">
-          <div class="cb-avatar-wrap">
-            <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" class="cb-logo" />
-            <span class="cb-online-dot"></span>
-          </div>
-          <div>
-            <div class="cb-name">ZK Studio</div>
-            <div class="cb-status">🟢 Online agora</div>
-          </div>
-        </div>
-        <button class="cb-close" onclick="toggleChat()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      <!-- Tela de início (antes de abrir chat) -->
-      <div id="chat-start-screen" class="cb-start">
-        <div class="cb-welcome-img">
-          <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />
-        </div>
-        <h3>Olá! 👋</h3>
-        <p>Bem-vindo ao suporte da <strong>ZK Studio</strong>.<br>Como posso te ajudar hoje?</p>
-        <input id="chat-name-input" type="text" placeholder="Seu nome (opcional)" maxlength="30" />
-        <button class="cb-start-btn" onclick="iniciarChat()">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Iniciar Conversa
-        </button>
-      </div>
-
-      <!-- Tela de chat ativo -->
-      <div id="chat-active-screen" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
-        <div id="chat-messages" class="cb-messages"></div>
-        <div id="chat-closed-notice" style="display:none" class="cb-closed-notice">
-          Conversa encerrada pelo suporte. Obrigado! 👋
-        </div>
-        <div id="chat-input-wrap" class="cb-input-wrap">
-          <textarea id="chat-input" placeholder="Digite sua mensagem..." rows="1"
-            onkeydown="chatKeyDown(event)"
-            oninput="chatAutoResize(this)"></textarea>
-          <button id="chat-send-btn" onclick="enviarMensagem()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script src="script.js"></script>
   <script>

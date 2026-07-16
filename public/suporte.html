@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZK Studio — Suporte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue:#1A56DB;--blue-light:#4F8EF7;--blue-bright:#60A5FA;
+      --blue-dark:#1239A8;--bg:#03081C;--bg2:#050C24;--bg3:#07102E;
+      --card:#081230;--card-border:#162050;--text:#CBD5E1;
+      --text-muted:#64748B;--white:#F1F5FF;--green:#22C55E;--red:#EF4444;
+      --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+    .navbar{background:rgba(3,8,28,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(26,86,219,0.2);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:60px;flex-shrink:0;z-index:100;}
+    .navbar img{height:38px;}
+    .navbar-title{font-size:0.85rem;font-weight:700;color:var(--white);margin-left:0.5rem;}
+    .navbar-right{margin-left:auto;display:flex;align-items:center;gap:1rem;}
+    .nav-user{display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--text-muted);}
+    .nav-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;}
+    .btn-logout{background:none;border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-logout:hover{background:rgba(239,68,68,0.1);}
+    .btn-back{background:none;border:1px solid rgba(26,86,219,0.3);color:var(--blue-bright);padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);text-decoration:none;transition:all 0.2s;}
+    .btn-back:hover{background:rgba(26,86,219,0.1);}
+
+    .layout{display:flex;flex:1;overflow:hidden;}
+
+    .sidebar{width:320px;background:var(--bg2);border-right:1px solid rgba(26,86,219,0.12);display:flex;flex-direction:column;flex-shrink:0;}
+    .sidebar-header{padding:1rem 1.2rem;border-bottom:1px solid rgba(26,86,219,0.1);display:flex;align-items:center;justify-content:space-between;}
+    .sidebar-header h3{font-size:0.85rem;font-weight:700;color:var(--white);}
+    .badge-count{background:var(--blue);color:#fff;font-size:0.65rem;padding:0.15rem 0.55rem;border-radius:10px;font-weight:700;}
+    .btn-new-ticket{background:var(--blue);color:#fff;border:none;padding:0.5rem 1rem;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;}
+    .btn-new-ticket:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
+
+    .ticket-list{flex:1;overflow-y:auto;padding:0.5rem;}
+    .ticket-list::-webkit-scrollbar{width:4px;}
+    .ticket-list::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+    .ticket-item{padding:0.9rem 1rem;border-radius:10px;cursor:pointer;transition:all 0.2s;border:1px solid transparent;margin-bottom:0.4rem;position:relative;}
+    .ticket-item:hover{background:var(--card);border-color:rgba(26,86,219,0.2);}
+    .ticket-item.active{background:var(--card);border-color:rgba(26,86,219,0.45);}
+    .ticket-item .t-subject{font-size:0.88rem;font-weight:600;color:var(--white);margin-bottom:0.2rem;display:flex;align-items:center;gap:0.5rem;}
+    .ticket-item .t-preview{font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .ticket-item .t-meta{font-size:0.68rem;color:var(--text-muted);margin-top:0.3rem;display:flex;align-items:center;gap:0.6rem;}
+    .ticket-item .t-time{position:absolute;top:0.9rem;right:0.8rem;font-size:0.68rem;color:var(--text-muted);}
+    .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .status-open{background:var(--green);}
+    .status-closed{background:var(--red);}
+
+    .no-tickets{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:0.8rem;color:var(--text-muted);font-size:0.85rem;text-align:center;padding:2rem;}
+    .no-tickets .nt-icon{font-size:2.5rem;opacity:0.4;}
+
+    .chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+    .chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;color:var(--text-muted);}
+    .chat-empty .ce-icon{font-size:3rem;opacity:0.3;}
+    .chat-empty p{font-size:0.9rem;}
+
+    .chat-header{padding:0.9rem 1.5rem;background:var(--bg3);border-bottom:1px solid rgba(26,86,219,0.15);display:flex;align-items:center;gap:0.9rem;flex-shrink:0;}
+    .chat-header .ch-info{flex:1;}
+    .chat-header .ch-name{font-size:0.92rem;font-weight:700;color:var(--white);}
+    .chat-header .ch-status{font-size:0.72rem;color:var(--green);}
+    .chat-header .ch-status.closed{color:var(--red);}
+    .btn-close-ticket{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-close-ticket:hover{background:rgba(239,68,68,0.25);}
+    .btn-reopen{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-reopen:hover{background:rgba(34,197,94,0.25);}
+
+    .chat-messages{flex:1;overflow-y:auto;padding:1.2rem 1.5rem;display:flex;flex-direction:column;gap:0.8rem;}
+    .chat-messages::-webkit-scrollbar{width:4px;}
+    .chat-messages::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+
+    .msg{display:flex;gap:0.6rem;align-items:flex-end;max-width:75%;}
+    .msg.from-user{align-self:flex-start;}
+    .msg.from-staff{align-self:flex-end;flex-direction:row-reverse;}
+    .msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;}
+    .msg.from-user .msg-avatar{background:linear-gradient(135deg,#334155,#1e293b);}
+    .msg.from-staff .msg-avatar{background:linear-gradient(135deg,var(--blue),var(--blue-dark));overflow:hidden;}
+    .msg.from-staff .msg-avatar img{width:100%;height:100%;object-fit:contain;border-radius:50%;}
+    .msg-bubble{padding:0.6rem 0.9rem;border-radius:12px;font-size:0.86rem;line-height:1.5;}
+    .msg.from-user .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.06);color:var(--text);border-bottom-left-radius:3px;}
+    .msg.from-staff .msg-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:3px;}
+    .msg-sender{font-size:0.68rem;font-weight:700;color:var(--text-muted);margin-bottom:0.2rem;}
+    .msg.from-staff .msg-sender{color:var(--blue-bright);text-align:right;}
+    .msg-time{font-size:0.62rem;color:var(--text-muted);margin-top:0.3rem;text-align:right;}
+
+    .chat-input-area{padding:1rem 1.5rem;background:var(--bg3);border-top:1px solid rgba(26,86,219,0.15);display:flex;gap:0.8rem;align-items:flex-end;flex-shrink:0;}
+    .chat-input-area textarea{flex:1;background:var(--card);border:1px solid rgba(26,86,219,0.25);border-radius:10px;padding:0.75rem 1rem;color:var(--text);font-family:var(--font);font-size:0.88rem;resize:none;min-height:42px;max-height:120px;transition:border-color 0.2s;}
+    .chat-input-area textarea:focus{outline:none;border-color:var(--blue);}
+    .chat-input-area textarea::placeholder{color:var(--text-muted);}
+    .btn-send{width:42px;height:42px;border-radius:10px;border:none;background:var(--blue);color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:1.1rem;}
+    .btn-send:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
+
+    .closed-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.6rem 1rem;text-align:center;font-size:0.8rem;color:var(--red);margin:0 1.5rem 0.8rem;}
+
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
+    .modal-overlay.active{display:flex;}
+    .modal{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:2rem;width:90%;max-width:420px;}
+    .modal h3{font-size:1rem;font-weight:700;color:var(--white);margin-bottom:1rem;}
+    .modal input{width:100%;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.7rem 1rem;color:var(--text);font-family:var(--font);font-size:0.88rem;margin-bottom:1rem;}
+    .modal input:focus{outline:none;border-color:var(--blue);}
+    .modal input::placeholder{color:var(--text-muted);}
+    .modal-buttons{display:flex;gap:0.6rem;justify-content:flex-end;}
+    .btn-cancel{background:none;border:1px solid var(--card-border);color:var(--text-muted);padding:0.55rem 1.2rem;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-cancel:hover{background:rgba(255,255,255,0.05);}
+    .btn-confirm{background:var(--blue);color:#fff;border:none;padding:0.55rem 1.2rem;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-confirm:hover{background:var(--blue-dark);}
+
+    #loginRequired{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
+    #loginRequired .lr-icon{font-size:4rem;}
+    #loginRequired h2{color:var(--white);font-size:1.3rem;}
+    #loginRequired p{color:var(--text-muted);font-size:0.88rem;}
+    .btn-login{display:inline-flex;align-items:center;gap:0.6rem;background:var(--blue);color:#fff;border:none;padding:0.8rem 1.8rem;border-radius:9px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;text-decoration:none;}
+    .btn-login:hover{background:var(--blue-dark);box-shadow:0 0 24px rgba(26,86,219,0.4);}
+
+    @media(max-width:768px){
+      .sidebar{width:100%;position:absolute;z-index:50;height:calc(100vh - 60px);top:60px;left:0;transition:transform 0.3s;}
+      .sidebar.hidden-mobile{transform:translateX(-100%);}
+      .chat-area{width:100%;}
+      .msg{max-width:90%;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />
+  <span class="navbar-title">Suporte</span>
+  <div class="navbar-right">
+    <a href="/" class="btn-back">← Voltar ao Site</a>
+    <div class="nav-user">
+      <div class="nav-avatar" id="navAvatar">?</div>
+      <span id="navName">Carregando...</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</nav>
+
+<!-- LOGIN REQUIRED -->
+<div id="loginRequired">
+  <div class="lr-icon">🔒</div>
+  <h2>Faça login para acessar o suporte</h2>
+  <p>Você precisa estar logado para abrir e acompanhar tickets de suporte.</p>
+  <a href="/auth.html" class="btn-login">Entrar</a>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout" id="mainLayout" style="display:none">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>Meus Tickets <span class="badge-count" id="ticketCount">0</span></h3>
+      <button class="btn-new-ticket" onclick="openNewTicketModal()">+ Novo</button>
+    </div>
+    <div class="ticket-list" id="ticketList">
+      <div class="no-tickets">
+        <div class="nt-icon">🎫</div>
+        <p>Nenhum ticket ainda.<br>Abra um para começar.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="chat-empty">
+      <div class="ce-icon">💬</div>
+      <p>Selecione um ticket ou crie um novo</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO TICKET -->
+<div class="modal-overlay" id="newTicketModal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Abrir Ticket de Suporte</h3>
+    <input type="text" id="ticketSubject" placeholder="Assunto do ticket (ex: Problema com script)" maxlength="200" />
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closeNewTicketModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="createTicket()">Abrir Ticket</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('zk_token');
+let user = null;
+let isStaffUser = false;
+let tickets = [];
+let activeTicketId = null;
+let messages = [];
+let polling = null;
+
+async function init() {
+  if (!token) { showLoginRequired(); return; }
+  try {
+    const me = await fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
+    if (!me.user) { showLoginRequired(); return; }
+    user = me.user;
+
+    const staffR = await fetch('/staff/check', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
+    isStaffUser = staffR.ok;
+
+    document.getElementById('loginRequired').style.display = 'none';
+    document.getElementById('mainLayout').style.display = 'flex';
+
+    const av = document.getElementById('navAvatar');
+    if (user.avatar) av.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+    else av.textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('navName').textContent = user.name.split(' ')[0];
+
+    if (isStaffUser) {
+      document.querySelector('.sidebar-header h3').innerHTML = 'Todos os Tickets <span class="badge-count" id="ticketCount">0</span>';
+    }
+
+    loadTickets();
+  } catch { showLoginRequired(); }
+}
+
+function showLoginRequired() {
+  document.getElementById('loginRequired').style.display = 'flex';
+  document.getElementById('mainLayout').style.display = 'none';
+}
+
+async function loadTickets() {
+  try {
+    const r = await fetch('/support/tickets', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    tickets = d.tickets || [];
+    renderTicketList();
+  } catch(e) { console.error(e); }
+}
+
+function renderTicketList() {
+  const el = document.getElementById('ticketList');
+  document.getElementById('ticketCount').textContent = tickets.length;
+
+  if (!tickets.length) {
+    el.innerHTML = '<div class="no-tickets"><div class="nt-icon">🎫</div><p>Nenhum ticket ainda.<br>Abra um para começar.</p></div>';
+    return;
+  }
+
+  el.innerHTML = tickets.map(t => {
+    const lastMsg = t.last_msg ? t.last_msg.slice(0, 40) + (t.last_msg.length > 40 ? '...' : '') : 'Sem mensagens';
+    const time = new Date(t.updated_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+    const isOpen = t.status === 'open';
+    const userName = t.user_name ? t.user_name : '';
+    return `<div class="ticket-item ${t.id === activeTicketId ? 'active' : ''}" onclick="selectTicket(${t.id})">
+      <div class="t-subject">
+        <span class="status-dot ${isOpen ? 'status-open' : 'status-closed'}"></span>
+        ${esc(t.subject)}
+      </div>
+      <div class="t-preview">${esc(lastMsg)}</div>
+      <div class="t-meta">
+        ${isStaffUser && userName ? `<span>👤 ${esc(userName)}</span>` : ''}
+        <span>${isOpen ? 'Aberto' : 'Fechado'}</span>
+        <span>${t.msg_count || 0} msgs</span>
+      </div>
+      <span class="t-time">${time}</span>
+    </div>`;
+  }).join('');
+}
+
+async function selectTicket(id) {
+  activeTicketId = id;
+  renderTicketList();
+  stopPolling();
+
+  const ticket = tickets.find(t => t.id === id);
+  if (!ticket) return;
+
+  const isOpen = ticket.status === 'open';
+
+  document.getElementById('chatArea').innerHTML = `
+    <div class="chat-header">
+      <div class="ch-info">
+        <div class="ch-name">${esc(ticket.subject)}</div>
+        <div class="ch-status ${isOpen ? '' : 'closed'}">${isOpen ? '🟢 Aberto' : '🔴 Fechado'}${ticket.user_name && isStaffUser ? ' — ' + esc(ticket.user_name) + ' (' + esc(ticket.user_email) + ')' : ''}</div>
+      </div>
+      ${isStaffUser && isOpen ? `<button class="btn-close-ticket" onclick="closeTicket(${id})">✕ Fechar</button>` : ''}
+      ${!isOpen ? `<button class="btn-reopen" onclick="reopenTicket(${id})">🔄 Reabrir</button>` : ''}
+    </div>
+    <div class="chat-messages" id="msgs-${id}"></div>
+    ${isOpen ? `<div class="chat-input-area">
+      <textarea id="chatInput" placeholder="Digite sua mensagem..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="btn-send" onclick="sendMessage()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>` : `<div class="closed-banner">Este ticket está fechado.</div>`}
+  `;
+
+  await loadMessages(id);
+  if (isOpen) startPolling(id);
+}
+
+async function loadMessages(ticketId) {
+  try {
+    const r = await fetch(`/support/messages?ticket_id=${ticketId}`, { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    messages = d.messages || [];
+    renderMessages();
+  } catch(e) { console.error(e); }
+}
+
+function renderMessages() {
+  const el = document.getElementById('msgs-' + activeTicketId);
+  if (!el) return;
+
+  if (!messages.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem;font-size:0.85rem;">Nenhuma mensagem ainda.</div>';
+    return;
+  }
+
+  el.innerHTML = messages.map(m => {
+    const isStaff = m.sender_type === 'staff';
+    const name = m.sender_name || (isStaff ? 'ZK Studio' : 'Você');
+    const time = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    return `<div class="msg from-${isStaff ? 'staff' : 'user'}">
+      <div class="msg-avatar">
+        ${isStaff ? '<img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />' : '👤'}
+      </div>
+      <div>
+        <div class="msg-sender">${esc(name)}</div>
+        <div class="msg-bubble">${esc(m.message)}</div>
+        <div class="msg-time">${time}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendMessage() {
+  if (!activeTicketId) return;
+  const inp = document.getElementById('chatInput');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = '';
+
+  try {
+    await fetch('/support/message', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({ ticket_id: activeTicketId, message: text })
+    });
+    await loadMessages(activeTicketId);
+  } catch(e) { console.error(e); }
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+async function closeTicket(id) {
+  if (!confirm('Fechar este ticket?')) return;
+  await fetch('/support/close', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ ticket_id: id })
+  });
+  stopPolling();
+  await loadTickets();
+  if (activeTicketId === id) selectTicket(id);
+}
+
+async function reopenTicket(id) {
+  await fetch('/support/reopen', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ ticket_id: id })
+  });
+  await loadTickets();
+  selectTicket(id);
+}
+
+function openNewTicketModal() {
+  document.getElementById('newTicketModal').classList.add('active');
+  document.getElementById('ticketSubject').value = '';
+  document.getElementById('ticketSubject').focus();
+}
+
+function closeNewTicketModal() {
+  document.getElementById('newTicketModal').classList.remove('active');
+}
+
+async function createTicket() {
+  const subject = document.getElementById('ticketSubject').value.trim();
+  if (!subject) { alert('Informe o assunto.'); return; }
+  try {
+    const r = await fetch('/support/ticket', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({ subject })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      closeNewTicketModal();
+      await loadTickets();
+      selectTicket(d.ticket.id);
+    } else {
+      alert(d.error || 'Erro ao criar ticket.');
+    }
+  } catch(e) { alert('Erro ao criar ticket.'); }
+}
+
+function startPolling(ticketId) {
+  stopPolling();
+  let lastCount = messages.length;
+  polling = setInterval(async () => {
+    if (activeTicketId !== ticketId) { stopPolling(); return; }
+    await loadMessages(ticketId);
+    if (messages.length > lastCount) {
+      lastCount = messages.length;
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (polling) { clearInterval(polling); polling = null; }
+}
+
+function logout() {
+  localStorage.removeItem('zk_token');
+  localStorage.removeItem('zk_user');
+  window.location.href = '/';
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.getElementById('newTicketModal').addEventListener('click', function(e) {
+  if (e.target === this) closeNewTicketModal();
+});
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeNewTicketModal(); });
+
+init();
+</script>
+</body>
+</html>

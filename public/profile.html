@@ -57,6 +57,13 @@
       transition:all 0.2s;font-family:var(--font);
     }
     .btn-logout:hover{background:rgba(239,68,68,0.22);}
+    .btn-support{
+      background:rgba(26,86,219,0.12);color:var(--blue-bright);
+      border:1px solid rgba(26,86,219,0.25);padding:0.5rem 1.2rem;
+      border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;
+      transition:all 0.2s;font-family:var(--font);text-decoration:none;
+    }
+    .btn-support:hover{background:rgba(26,86,219,0.22);}
 
     /* SEÇÕES */
     .section-title{
@@ -113,6 +120,7 @@
 
   <nav class="navbar">
     <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK Studio" />
+    <a href="/suporte.html">Suporte</a>
     <a href="/">← Voltar ao site</a>
   </nav>
 
@@ -148,6 +156,7 @@
           <p>${esc(user.email)}</p>
           <div class="since">// membro desde ${since}</div>
         </div>
+        <a href="/suporte.html" class="btn-support">Suporte</a>
         <button class="btn-logout" onclick="logout()">Sair</button>
       </div>
 

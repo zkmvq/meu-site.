@@ -51,6 +51,22 @@ async function initDB() {
       label VARCHAR(100),
       added_at TIMESTAMP DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      subject VARCHAR(200) NOT NULL,
+      status VARCHAR(20) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id SERIAL PRIMARY KEY,
+      ticket_id INTEGER REFERENCES support_tickets(id) ON DELETE CASCADE,
+      sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      sender_type VARCHAR(10) NOT NULL,
+      message TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   // Migração segura
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`).catch(()=>{});
@@ -264,7 +280,108 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── CHAT ──────────────────────────────────────────────────────────────
+  // ── SUPORTE ──────────────────────────────────────────────────────────
+  if (urlPath==='/support/ticket'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res,401,{error:'Faça login para abrir um ticket.'});
+    const {subject} = await readBody(req);
+    if (!subject||!subject.trim()) return jsonRes(res,400,{error:'Informe o assunto.'});
+    try {
+      const r = await pool.query('INSERT INTO support_tickets (user_id,subject) VALUES($1,$2) RETURNING id,subject,status,created_at,updated_at',[decoded.id,subject.trim()]);
+      jsonRes(res,200,{ticket:r.rows[0]});
+    } catch(e) { jsonRes(res,500,{error:'Erro ao criar ticket.'}); }
+    return;
+  }
+
+  if (urlPath==='/support/tickets'&&req.method==='GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res,401,{error:'Não autorizado.'});
+    try {
+      const staff = await isStaff(decoded);
+      let r;
+      if (staff) {
+        r = await pool.query(`SELECT t.*, u.name as user_name, u.email as user_email,
+          (SELECT COUNT(*) FROM support_messages WHERE ticket_id=t.id) as msg_count,
+          (SELECT message FROM support_messages WHERE ticket_id=t.id ORDER BY created_at DESC LIMIT 1) as last_msg
+          FROM support_tickets t JOIN users u ON t.user_id=u.id ORDER BY t.updated_at DESC`);
+      } else {
+        r = await pool.query(`SELECT t.*,
+          (SELECT COUNT(*) FROM support_messages WHERE ticket_id=t.id) as msg_count,
+          (SELECT message FROM support_messages WHERE ticket_id=t.id ORDER BY created_at DESC LIMIT 1) as last_msg
+          FROM support_tickets t WHERE t.user_id=$1 ORDER BY t.updated_at DESC`,[decoded.id]);
+      }
+      jsonRes(res,200,{tickets:r.rows});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  if (urlPath==='/support/message'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res,401,{error:'Não autorizado.'});
+    const {ticket_id,message} = await readBody(req);
+    if (!ticket_id||!message||!message.trim()) return jsonRes(res,400,{error:'Mensagem vazia.'});
+    try {
+      const t = await pool.query('SELECT * FROM support_tickets WHERE id=$1',[ticket_id]);
+      if (!t.rows.length) return jsonRes(res,404,{error:'Ticket não encontrado.'});
+      const ticket = t.rows[0];
+      const staff = await isStaff(decoded);
+      if (ticket.user_id !== decoded.id && !staff) return jsonRes(res,403,{error:'Sem permissão.'});
+      const senderType = staff ? 'staff' : 'user';
+      const r = await pool.query('INSERT INTO support_messages (ticket_id,sender_id,sender_type,message) VALUES($1,$2,$3,$4) RETURNING id,sender_id,sender_type,message,created_at',[ticket_id,decoded.id,senderType,message.trim()]);
+      await pool.query('UPDATE support_tickets SET updated_at=NOW() WHERE id=$1',[ticket_id]);
+      jsonRes(res,200,{msg:r.rows[0]});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  if (urlPath==='/support/messages'&&req.method==='GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res,401,{error:'Não autorizado.'});
+    const ticketId = new URL('http://x'+req.url).searchParams.get('ticket_id');
+    if (!ticketId) return jsonRes(res,400,{error:'ticket_id obrigatório.'});
+    try {
+      const t = await pool.query('SELECT * FROM support_tickets WHERE id=$1',[ticketId]);
+      if (!t.rows.length) return jsonRes(res,404,{error:'Ticket não encontrado.'});
+      const ticket = t.rows[0];
+      const staff = await isStaff(decoded);
+      if (ticket.user_id !== decoded.id && !staff) return jsonRes(res,403,{error:'Sem permissão.'});
+      const r = await pool.query(`SELECT sm.*, u.name as sender_name FROM support_messages sm
+        LEFT JOIN users u ON sm.sender_id=u.id WHERE sm.ticket_id=$1 ORDER BY sm.created_at ASC`,[ticketId]);
+      jsonRes(res,200,{messages:r.rows,ticket});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  if (urlPath==='/support/close'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded||!await isStaff(decoded)) return jsonRes(res,403,{error:'Apenas staff.'});
+    const {ticket_id} = await readBody(req);
+    if (!ticket_id) return jsonRes(res,400,{error:'ticket_id obrigatório.'});
+    try {
+      await pool.query("UPDATE support_tickets SET status='closed',updated_at=NOW() WHERE id=$1",[ticket_id]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  if (urlPath==='/support/reopen'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded) return jsonRes(res,401,{error:'Não autorizado.'});
+    const {ticket_id} = await readBody(req);
+    if (!ticket_id) return jsonRes(res,400,{error:'ticket_id obrigatório.'});
+    try {
+      const t = await pool.query('SELECT * FROM support_tickets WHERE id=$1',[ticket_id]);
+      if (!t.rows.length) return jsonRes(res,404,{error:'Ticket não encontrado.'});
+      const ticket = t.rows[0];
+      const staff = await isStaff(decoded);
+      if (ticket.user_id !== decoded.id && !staff) return jsonRes(res,403,{error:'Sem permissão.'});
+      await pool.query("UPDATE support_tickets SET status='open',updated_at=NOW() WHERE id=$1",[ticket_id]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  // ── CHAT (LEGADO) ────────────────────────────────────────────────────
   if (urlPath==='/chat/start'&&req.method==='POST') {
     const body=await readBody(req); const id=makeId();
     sessions[id]={id,name:body.name||'Visitante',email:body.email||'',messages:[],open:true};
