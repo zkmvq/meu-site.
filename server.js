@@ -654,6 +654,72 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── TICKET DISCORD ──────────────────────────────────────────────────
+  if (urlPath==='/ticket/create'&&req.method==='POST') {
+    const {script_name, price, user_name, user_email} = await readBody(req);
+    if (!script_name||!price) return jsonRes(res,400,{error:'Dados obrigatórios.'});
+    try {
+      const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
+      const botToken = cfg.discord?.bot_token;
+      const categoryId = cfg.discord?.ticket_category_id;
+      if (!botToken||!categoryId) return jsonRes(res,500,{error:'Discord não configurado.'});
+
+      // Busca o guild do bot
+      const guildsRes = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+        headers: { Authorization: 'Bot ' + botToken }
+      });
+      const guilds = await guildsRes.json();
+      if (!guilds.length) return jsonRes(res,500,{error:'Bot não está em nenhum servidor.'});
+      const guildId = guilds[0].id;
+
+      // Cria canal na categoria de compras
+      const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
+      const createRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
+        method: 'POST',
+        headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: channelName,
+          type: 0,
+          parent_id: categoryId,
+          topic: `Compra: ${script_name} | ${user_name||'Anônimo'} | ${user_email||'sem email'}`
+        })
+      });
+      const channel = await createRes.json();
+      if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message});
+
+      // Envia mensagem de boas-vindas no canal
+      const embed = {
+        embeds: [{
+          title: '🛒 Nova Compra',
+          color: 0x1A56DB,
+          fields: [
+            { name: 'Script', value: script_name, inline: true },
+            { name: 'Preço', value: price, inline: true },
+            { name: 'Comprador', value: user_name||'Anônimo', inline: true },
+            { name: 'Email', value: user_email||'Não informado', inline: true }
+          ],
+          footer: { text: 'ZK Studio — Sistema de Tickets' },
+          timestamp: new Date().toISOString()
+        }]
+      };
+      await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
+        method: 'POST',
+        headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify(embed)
+      });
+
+      // Salva pedido no banco
+      try {
+        await pool.query("INSERT INTO orders (buyer_name,buyer_email,items,total) VALUES($1,$2,$3,$4)",
+          [user_name||null, user_email||null, JSON.stringify([{name:script_name,price}]), price]);
+      } catch(_){}
+
+      const discordUrl = `https://discord.com/channels/${guildId}/${channel.id}`;
+      jsonRes(res,200,{ok:true, channel_id: channel.id, url: discordUrl, guild_id: guildId});
+    } catch(e) { jsonRes(res,500,{error:'Erro ao criar ticket: '+e.message}); }
+    return;
+  }
+
   // ── DISCORD OAUTH ────────────────────────────────────────────────────
   if (urlPath==='/auth/discord'&&req.method==='GET') {
     let cfg;
