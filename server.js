@@ -771,117 +771,119 @@ const server = http.createServer(async (req, res) => {
       const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
       const botToken = process.env.BOT_TOKEN || cfg.discord?.bot_token;
       const categoryId = cfg.discord?.ticket_category_id;
-      if (!botToken||!categoryId) return jsonRes(res,500,{error:'Discord não configurado.'});
+      const guildId = cfg.discord?.ticket_guild_id;
+      if (!botToken||!categoryId||!guildId) return jsonRes(res,500,{error:'Discord não configurado.'});
 
-      // Busca o guild do bot
-      const guildsRes = await fetch('https://discord.com/api/v10/users/@me/guilds', {
-        headers: { Authorization: 'Bot ' + botToken }
-      });
-      const guilds = await guildsRes.json();
-      console.log('[TICKET] Servidores do bot:', JSON.stringify(guilds.map(g=>({id:g.id,name:g.name}))));
-      if (!guilds.length) return jsonRes(res,500,{error:'Bot não está em nenhum servidor.'});
-      const guildId = cfg.discord?.ticket_guild_id || guilds[0].id;
+      // Mapeia produto pra imagem
+      const productImages = {
+        'PAINEL ADMIN': 'https://zkstudio-production-32185.up.railway.app/produtos/paineis.png',
+        'PAINEL PUNIÇÃO': 'https://zkstudio-production-32185.up.railway.app/produtos/prisao.png',
+        'PAINEL STREAMER': 'https://zkstudio-production-32185.up.railway.app/produtos/economy.png',
+        'Sistema Peds': 'https://zkstudio-production-32185.up.railway.app/produtos/peds.png',
+        'Anti-cheater': 'https://zkstudio-production-32185.up.railway.app/produtos/anticheter.png'
+      };
+      const productImage = productImages[script_name] || '';
 
-      // Cria canal na categoria de compras
-      const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
-      const createBody = JSON.stringify({
-        name: channelName,
-        type: 0,
-        parent_id: categoryId
-      });
-      console.log('[TICKET] Body:', createBody, 'guild:', guildId);
-      const createRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
-        method: 'POST',
-        headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
-        body: createBody
-      });
-      const channel = await createRes.json();
-      console.log('[TICKET] Resposta:', JSON.stringify(channel));
-      if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message+' ('+channel.code+') '+JSON.stringify(channel.errors||'')});
+      // Busca discord_id do comprador
+      let buyerDiscordId = '';
+      try {
+        const userR = await pool.query("SELECT discord_id FROM users WHERE email=$1", [user_email]);
+        if (userR.rows.length > 0 && userR.rows[0].discord_id) buyerDiscordId = userR.rows[0].discord_id;
+      } catch(_){}
 
-      // Envia embed com botões
+      let channelUrl = '';
+
+      // Usa discord.js se bot estiver conectado
       if (botReady && discordClient) {
         const guild = discordClient.guilds.cache.get(guildId);
-        const ch = guild ? guild.channels.cache.get(channel.id) : null;
+        if (!guild) return jsonRes(res,500,{error:'Bot não está no servidor.'});
 
-        // Mapeia produto pra imagem
-        const productImages = {
-          'PAINEL ADMIN': 'https://zkstudio-production-32185.up.railway.app/produtos/paineis.png',
-          'PAINEL PUNIÇÃO': 'https://zkstudio-production-32185.up.railway.app/produtos/prisao.png',
-          'PAINEL STREAMER': 'https://zkstudio-production-32185.up.railway.app/produtos/economy.png',
-          'Sistema Peds': 'https://zkstudio-production-32185.up.railway.app/produtos/peds.png',
-          'Anti-cheater': 'https://zkstudio-production-32185.up.railway.app/produtos/anticheter.png'
-        };
-        const productImage = productImages[script_name] || '';
-
-        // Busca discord_id do comprador pelo email
-        let buyerDiscordId = '';
-        try {
-          const userR = await pool.query("SELECT discord_id FROM users WHERE email=$1", [user_email]);
-          if (userR.rows.length > 0 && userR.rows[0].discord_id) buyerDiscordId = userR.rows[0].discord_id;
-        } catch(_){}
-
-        if (ch) {
-          // Atualiza topic com discord_id
-          try { await ch.setTopic('compra | ' + (user_name||'Anônimo') + ' | ' + (user_email||'') + ' | ' + buyerDiscordId); } catch(_){}
-
-          const ticketEmbed = new EmbedBuilder()
-            .setColor(0x0D9488)
-            .setTitle('Ticket de Compra')
-            .setDescription('> **Obrigado por comprar na ZK Studio!**\n> Um membro da equipe irá atender você em breve.\n> Por favor, aguarde e descreva sua necessidade abaixo.')
-            .addFields(
-              { name: '\u200b', value: '\u200b', inline: false },
-              { name: '📦 Produto', value: '```' + script_name + '```', inline: true },
-              { name: '💰 Valor', value: '```' + price + '```', inline: true },
-              { name: '📊 Status', value: '🔴 Aguardando atendimento', inline: true },
-              { name: '\u200b', value: '\u200b', inline: false },
-              { name: '👤 Comprador', value: (user_name||'Anônimo'), inline: true },
-              { name: '📧 Email', value: (user_email||'Não informado'), inline: true },
-              { name: '🕐 Criado em', value: '<t:' + Math.floor(Date.now()/1000) + ':R>', inline: true }
-            )
-            .setFooter({ text: 'ZK Studio — Suporte', iconURL: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' })
-            .setTimestamp();
-
-          if (productImage) ticketEmbed.setThumbnail(productImage);
-
-          const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('ticket_claim').setLabel('Assumir').setEmoji('👋').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('ticket_notify').setLabel('Notificar').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('ticket_close').setLabel('Fechar').setEmoji('🔒').setStyle(ButtonStyle.Danger)
-          );
-
-          await ch.send({ embeds: [ticketEmbed], components: [row] });
-
-          // Mensagem de boas-vindas
-          const welcomeEmbed = new EmbedBuilder()
-            .setColor(0x1A56DB)
-            .setTitle('🎮 ZK Studio — Atendimento')
-            .setDescription('Olá **' + (user_name||'Comprador') + '**! Seu ticket de compra foi aberto com sucesso.\n\n📋 **Detalhes da sua compra:**\n> Script: **' + script_name + '**\n> Valor: **' + price + '**\n\nAguarde um membro da equipe responder. Você pode ir respondendo normalmente neste canal.')
-            .setTimestamp();
-
-          await ch.send({ embeds: [welcomeEmbed] });
+        // Verifica permissão
+        const botMember = guild.members.me;
+        if (!botMember || !botMember.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
+          return jsonRes(res,500,{error:'Bot sem permissão de Gerenciar Canais.'});
         }
-      } else {
-        // Fallback REST API (sem botões)
-        const embedBody = JSON.stringify({
-          embeds: [{
-            title: '🛒 Nova Compra',
-            color: 0x1A56DB,
-            fields: [
-              { name: 'Script', value: script_name, inline: true },
-              { name: 'Preço', value: price, inline: true },
-              { name: 'Comprador', value: user_name||'Anônimo', inline: true },
-              { name: 'Email', value: user_email||'Não informado', inline: true }
-            ],
-            footer: { text: 'ZK Studio — Sistema de Tickets' },
-            timestamp: new Date().toISOString()
-          }]
+
+        const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
+
+        const ticketChannel = await guild.channels.create({
+          name: channelName,
+          parent: categoryId,
+          topic: 'compra | ' + (user_name||'Anônimo') + ' | ' + (user_email||'') + ' | ' + buyerDiscordId,
+          permissionOverwrites: [
+            { id: guild.id, allow: ['ViewChannel', 'SendMessages'] }
+          ]
         });
+
+        console.log('[TICKET] Canal criado:', ticketChannel.id);
+
+        // Embed principal
+        const ticketEmbed = new EmbedBuilder()
+          .setColor(0x0D9488)
+          .setTitle('Ticket de Compra')
+          .setDescription('> **Obrigado por comprar na ZK Studio!**\n> Um membro da equipe irá atender você em breve.\n> Por favor, aguarde e descreva sua necessidade abaixo.')
+          .addFields(
+            { name: '\u200b', value: '\u200b', inline: false },
+            { name: '📦 Produto', value: '```' + script_name + '```', inline: true },
+            { name: '💰 Valor', value: '```' + price + '```', inline: true },
+            { name: '📊 Status', value: '🔴 Aguardando atendimento', inline: true },
+            { name: '\u200b', value: '\u200b', inline: false },
+            { name: '👤 Comprador', value: (user_name||'Anônimo'), inline: true },
+            { name: '📧 Email', value: (user_email||'Não informado'), inline: true },
+            { name: '🕐 Criado em', value: '<t:' + Math.floor(Date.now()/1000) + ':R>', inline: true }
+          )
+          .setFooter({ text: 'ZK Studio — Suporte', iconURL: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' })
+          .setTimestamp();
+
+        if (productImage) ticketEmbed.setThumbnail(productImage);
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('ticket_claim').setLabel('Assumir').setEmoji('👋').setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId('ticket_notify').setLabel('Notificar').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId('ticket_close').setLabel('Fechar').setEmoji('🔒').setStyle(ButtonStyle.Danger)
+        );
+
+        await ticketChannel.send({ embeds: [ticketEmbed], components: [row] });
+
+        // Mensagem de boas-vindas
+        const welcomeEmbed = new EmbedBuilder()
+          .setColor(0x1A56DB)
+          .setTitle('🎮 ZK Studio — Atendimento')
+          .setDescription('Olá **' + (user_name||'Comprador') + '**! Seu ticket de compra foi aberto com sucesso.\n\n📋 **Detalhes da sua compra:**\n> Script: **' + script_name + '**\n> Valor: **' + price + '**\n\nAguarde um membro da equipe responder. Você pode ir respondendo normalmente neste canal.')
+          .setTimestamp();
+
+        await ticketChannel.send({ embeds: [welcomeEmbed] });
+        channelUrl = 'https://discord.com/channels/' + guildId + '/' + ticketChannel.id;
+
+      } else {
+        // Fallback: REST API sem botões
+        const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
+        const createRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
+          method: 'POST',
+          headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: channelName, type: 0, parent_id: categoryId })
+        });
+        const channel = await createRes.json();
+        if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message});
         await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
           method: 'POST',
           headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
-          body: embedBody
+          body: JSON.stringify({
+            embeds: [{
+              title: '🛒 Nova Compra',
+              color: 0x1A56DB,
+              fields: [
+                { name: 'Script', value: script_name, inline: true },
+                { name: 'Preço', value: price, inline: true },
+                { name: 'Comprador', value: user_name||'Anônimo', inline: true },
+                { name: 'Email', value: user_email||'Não informado', inline: true }
+              ],
+              footer: { text: 'ZK Studio — Sistema de Tickets' },
+              timestamp: new Date().toISOString()
+            }]
+          })
         });
+        channelUrl = 'https://discord.com/channels/' + guildId + '/' + channel.id;
       }
 
       // Salva pedido no banco
@@ -890,8 +892,7 @@ const server = http.createServer(async (req, res) => {
           [user_name||null, user_email||null, JSON.stringify([{name:script_name,price}]), price]);
       } catch(_){}
 
-      const discordUrl = `https://discord.com/channels/${guildId}/${channel.id}`;
-      jsonRes(res,200,{ok:true, channel_id: channel.id, url: discordUrl, guild_id: guildId});
+      jsonRes(res,200,{ok:true, url: channelUrl, guild_id: guildId});
     } catch(e) { jsonRes(res,500,{error:'Erro ao criar ticket: '+e.message}); }
     return;
   }
