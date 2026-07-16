@@ -17,7 +17,7 @@ const jwt      = require('jsonwebtoken');
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'zkstudio_secret_2025';
 const DB_URL       = process.env.DATABASE_URL || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
-const OWNER_EMAIL  = 'ar39491@gmail.com'; // Admin principal
+const OWNER_EMAIL  = 'arc39491@gmail.com'; // Admin principal
 
 const pool = new Pool({
   connectionString: DB_URL,
