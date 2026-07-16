@@ -99,36 +99,31 @@ carregarConfig();
 
 // ── NAVBAR AUTH ───────────────────────────────────────────────────────
 (function initNavAuth() {
-  const wrap     = document.getElementById('navAuthBtn');
   const loginBtn = document.getElementById('navLoginBtn');
   const userBtn  = document.getElementById('navUserBtn');
   const avatar   = document.getElementById('navUserAvatar');
   const nameEl   = document.getElementById('navUserName');
-  if (!wrap) return;
-
-  wrap.style.display = 'flex';
-  wrap.style.alignItems = 'center';
-  wrap.style.gap = '0.6rem';
+  if (!loginBtn) return;
 
   const token = localStorage.getItem('zk_token');
-  if (!token) { loginBtn.style.display='inline-flex'; return; }
+  if (!token) return; // mostra "Entrar" por padrão
 
-  // Verifica token
+  // Tem token — verifica se é válido
   fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } })
     .then(r => r.ok ? r.json() : null)
     .then(d => {
       if (!d || !d.user) {
         localStorage.removeItem('zk_token');
-        loginBtn.style.display = 'inline-flex';
-        return;
+        return; // mantém "Entrar"
       }
-      loginBtn.style.display  = 'none';
-      userBtn.style.display   = 'inline-flex';
-      avatar.textContent      = d.user.name.charAt(0).toUpperCase();
-      nameEl.textContent      = d.user.name.split(' ')[0];
+      // Logado — troca para nome do usuário
+      loginBtn.style.display = 'none';
+      userBtn.style.display  = 'inline-flex';
+      avatar.textContent     = d.user.name.charAt(0).toUpperCase();
+      nameEl.textContent     = d.user.name.split(' ')[0];
       localStorage.setItem('zk_user', JSON.stringify(d.user));
     })
-    .catch(() => { loginBtn.style.display = 'inline-flex'; });
+    .catch(() => {}); // mantém "Entrar" em caso de erro
 })();
 
 
