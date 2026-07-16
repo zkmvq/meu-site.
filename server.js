@@ -676,6 +676,7 @@ const server = http.createServer(async (req, res) => {
       const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
       const createBody = JSON.stringify({
         name: channelName,
+        type: 0,
         parent_id: categoryId
       });
       console.log('[TICKET] Body:', createBody, 'guild:', guildId);
@@ -686,7 +687,7 @@ const server = http.createServer(async (req, res) => {
       });
       const channel = await createRes.json();
       console.log('[TICKET] Resposta:', JSON.stringify(channel));
-      if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message+' ('+channel.code+')'});
+      if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message+' ('+channel.code+') '+JSON.stringify(channel.errors||'')});
 
       // Envia mensagem de boas-vindas no canal
       const embed = {
