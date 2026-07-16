@@ -459,15 +459,13 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
   transition:width 0.15s, height 0.15s, background 0.15s;
 }
 #cursor-ring {
-  position:fixed; top:0; left:0; width:36px; height:36px;
+  display:none;
   border:1.5px solid rgba(96,165,250,0.65); border-radius:50%;
   pointer-events:none; z-index:999998; transform:translate(-50%,-50%);
   transition:width 0.2s, height 0.2s, border-color 0.2s, background 0.2s;
 }
 body.cursor-hover #cursor-dot { width:10px; height:10px; background:var(--blue-bright); }
-body.cursor-hover #cursor-ring { width:55px; height:55px; border-color:var(--blue-bright); background:rgba(96,165,250,0.06); }
 body.cursor-click #cursor-dot  { width:5px; height:5px; }
-body.cursor-click #cursor-ring { width:26px; height:26px; }
 
 /* === RESPONSIVE === */
 @media(min-width:1600px){

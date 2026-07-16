@@ -47,9 +47,12 @@ async function initDB() {
     );
     CREATE TABLE IF NOT EXISTS staff_emails (
       id SERIAL PRIMARY KEY,
-      email VARCHAR(150) UNIQUE NOT NULL,
+      email VARCHAR(150),
+      discord_id VARCHAR(50),
       label VARCHAR(100),
-      added_at TIMESTAMP DEFAULT NOW()
+      added_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(email),
+      UNIQUE(discord_id)
     );
     CREATE TABLE IF NOT EXISTS support_tickets (
       id SERIAL PRIMARY KEY,
@@ -101,6 +104,8 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_staff BOOLEAN DEFAULT FALSE`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_id VARCHAR(50) UNIQUE`).catch(()=>{});
+  await pool.query(`ALTER TABLE staff_emails ADD COLUMN IF NOT EXISTS discord_id VARCHAR(50)`).catch(()=>{});
+  await pool.query(`ALTER TABLE staff_emails ALTER COLUMN email DROP NOT NULL`).catch(()=>{});
   // Garante que o dono está na tabela de staff
   await pool.query(`INSERT INTO staff_emails (email, label) VALUES ($1, 'Dono - ZK Studio') ON CONFLICT (email) DO NOTHING`, [OWNER_EMAIL]);
   // Marca o dono como admin/staff se já estiver cadastrado
@@ -152,9 +157,19 @@ function verifyToken(token) {
 }
 async function isStaff(decoded) {
   if (!decoded) return false;
-  const r = await pool.query('SELECT is_staff, is_admin, email FROM users WHERE id=$1', [decoded.id]);
+  const r = await pool.query('SELECT is_staff, is_admin, email, discord_id FROM users WHERE id=$1', [decoded.id]);
   if (!r.rows.length) return false;
-  return r.rows[0].is_staff || r.rows[0].is_admin || r.rows[0].email === OWNER_EMAIL;
+  if (r.rows[0].is_staff || r.rows[0].is_admin || r.rows[0].email === OWNER_EMAIL) return true;
+  const u = r.rows[0];
+  if (u.email) {
+    const se = await pool.query('SELECT id FROM staff_emails WHERE email=$1', [u.email]);
+    if (se.rows.length) return true;
+  }
+  if (u.discord_id) {
+    const sd = await pool.query('SELECT id FROM staff_emails WHERE discord_id=$1', [u.discord_id]);
+    if (sd.rows.length) return true;
+  }
+  return false;
 }
 async function isAdmin(decoded) {
   if (!decoded) return false;
@@ -261,11 +276,17 @@ const server = http.createServer(async (req, res) => {
   if (urlPath === '/staff/add' && req.method === 'POST') {
     const decoded = verifyToken(getToken(req));
     if (!decoded||!await isAdmin(decoded)) return jsonRes(res,403,{error:'Apenas admin.'});
-    const {email,label} = await readBody(req);
-    if (!email) return jsonRes(res,400,{error:'Informe o email.'});
+    const {email,discord_id,label} = await readBody(req);
+    if (!email && !discord_id) return jsonRes(res,400,{error:'Informe o email ou o Discord ID.'});
     try {
-      await pool.query('INSERT INTO staff_emails (email,label) VALUES($1,$2) ON CONFLICT (email) DO UPDATE SET label=$2',[email.toLowerCase(),label||'Staff']);
-      await pool.query('UPDATE users SET is_staff=true WHERE email=$1',[email.toLowerCase()]);
+      if (email) {
+        await pool.query('INSERT INTO staff_emails (email,label) VALUES($1,$2) ON CONFLICT (email) DO UPDATE SET label=$2',[email.toLowerCase(),label||'Staff']);
+        await pool.query('UPDATE users SET is_staff=true WHERE email=$1',[email.toLowerCase()]);
+      }
+      if (discord_id) {
+        await pool.query('INSERT INTO staff_emails (discord_id,label) VALUES($1,$2) ON CONFLICT (discord_id) DO UPDATE SET label=$2',[discord_id,label||'Staff']);
+        await pool.query('UPDATE users SET is_staff=true WHERE discord_id=$1',[discord_id]);
+      }
       jsonRes(res,200,{ok:true});
     } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
     return;
@@ -274,11 +295,17 @@ const server = http.createServer(async (req, res) => {
   if (urlPath === '/staff/remove' && req.method === 'POST') {
     const decoded = verifyToken(getToken(req));
     if (!decoded||!await isAdmin(decoded)) return jsonRes(res,403,{error:'Apenas admin.'});
-    const {email} = await readBody(req);
+    const {email,discord_id} = await readBody(req);
     if (email === OWNER_EMAIL) return jsonRes(res,403,{error:'Não é possível remover o dono.'});
     try {
-      await pool.query('DELETE FROM staff_emails WHERE email=$1',[email]);
-      await pool.query('UPDATE users SET is_staff=false WHERE email=$1',[email]);
+      if (email) {
+        await pool.query('DELETE FROM staff_emails WHERE email=$1',[email]);
+        await pool.query('UPDATE users SET is_staff=false WHERE email=$1',[email]);
+      }
+      if (discord_id) {
+        await pool.query('DELETE FROM staff_emails WHERE discord_id=$1',[discord_id]);
+        await pool.query('UPDATE users SET is_staff=false WHERE discord_id=$1',[discord_id]);
+      }
       jsonRes(res,200,{ok:true});
     } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
     return;

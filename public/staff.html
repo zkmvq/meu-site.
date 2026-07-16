@@ -187,13 +187,14 @@
     <div class="page" id="page-staff">
       <div class="page-title"><span class="pt-icon">🛡️</span> Gerenciar Staff</div>
       <div class="form-card">
-        <h3>Adicionar novo staff pelo email</h3>
+        <h3>Adicionar staff</h3>
         <div class="msg" id="staffMsg"></div>
         <div class="form-row">
-          <input class="form-input" id="newStaffId" placeholder="Email do usuário" />
+          <input class="form-input" id="newStaffId" placeholder="Email ou Discord ID" />
           <input class="form-input" id="newStaffLabel" placeholder="Cargo (ex: Moderador)" />
           <button class="btn-primary" onclick="addStaff()">Adicionar</button>
         </div>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem;">Pode usar o email ou o ID do Discord do usuário.</p>
       </div>
       <div class="page-title" style="font-size:1rem"><span class="pt-icon">👮</span> Staff Atual</div>
       <div class="table-wrap" id="staffTable"><div class="loading">Carregando...</div></div>
@@ -312,13 +313,14 @@ async function loadStaff() {
     const d = await r.json();
     const list = d.staff || [];
     document.getElementById('staffTable').innerHTML = `<table>
-      <thead><tr><th>Email</th><th>Cargo</th><th>Adicionado em</th><th>Ação</th></tr></thead>
+      <thead><tr><th>Email</th><th>Discord ID</th><th>Cargo</th><th>Adicionado em</th><th>Ação</th></tr></thead>
       <tbody>
       ${list.map(s => `<tr>
-        <td class="td-mono">${esc(s.email)}</td>
+        <td class="td-mono">${s.email ? esc(s.email) : '<span style="color:var(--text-muted);">—</span>'}</td>
+        <td class="td-mono">${s.discord_id ? esc(s.discord_id) : '<span style="color:var(--text-muted);">—</span>'}</td>
         <td>${esc(s.label||'Staff')}</td>
         <td class="td-mono">${new Date(s.added_at).toLocaleDateString('pt-BR')}</td>
-        <td>${s.email === 'ar39491@gmail.com' ? '<span class="badge badge-red">Dono</span>' : `<button class="btn-danger btn-sm" onclick="removeStaff('${s.email}')">Remover</button>`}</td>
+        <td>${s.email === 'arc39491@gmail.com' ? '<span class="badge badge-red">Dono</span>' : `<button class="btn-danger btn-sm" onclick="removeStaff('${s.email||''}','${s.discord_id||''}')">Remover</button>`}</td>
       </tr>`).join('')}
       </tbody>
     </table>`;
@@ -326,23 +328,28 @@ async function loadStaff() {
 }
 
 async function addStaff() {
-  const email = document.getElementById('newStaffId').value.trim();
+  const id = document.getElementById('newStaffId').value.trim();
   const label = document.getElementById('newStaffLabel').value.trim();
-  if (!email) { showMsg('staffMsg','error','Informe o email.'); return; }
+  if (!id) { showMsg('staffMsg','error','Informe o email ou Discord ID.'); return; }
+  const isDiscord = /^\d{17,20}$/.test(id);
+  const body = isDiscord ? { discord_id: id, label } : { email: id, label };
   const r = await fetch('/staff/add', {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({ email, label })
+    body: JSON.stringify(body)
   });
   const d = await r.json();
   if (r.ok) { showMsg('staffMsg','success','Staff adicionado!'); document.getElementById('newStaffId').value=''; document.getElementById('newStaffLabel').value=''; loadStaff(); }
   else showMsg('staffMsg','error', d.error||'Erro.');
 }
 
-async function removeStaff(email) {
+async function removeStaff(email, discord_id) {
   if (!confirm('Remover este staff?')) return;
+  const body = {};
+  if (email) body.email = email;
+  if (discord_id) body.discord_id = discord_id;
   const r = await fetch('/staff/remove', {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({ email })
+    body: JSON.stringify(body)
   });
   const d = await r.json();
   if (r.ok) loadStaff();

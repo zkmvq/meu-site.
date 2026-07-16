@@ -14,24 +14,15 @@
 
 // ── CURSOR COM DELAY ──────────────────────────────────────────────────
 (function initCursor() {
-  const dot  = document.getElementById('cursor-dot');
-  const ring = document.getElementById('cursor-ring');
-  if (!dot || !ring) return;
+  const dot = document.getElementById('cursor-dot');
+  if (!dot) return;
   let mx = innerWidth / 2, my = innerHeight / 2;
-  let rx = mx, ry = my;
 
   document.addEventListener('mousemove', e => {
     mx = e.clientX; my = e.clientY;
     dot.style.left = mx + 'px';
     dot.style.top  = my + 'px';
   });
-  (function loop() {
-    rx += (mx - rx) * 0.35;
-    ry += (my - ry) * 0.35;
-    ring.style.left = rx + 'px';
-    ring.style.top  = ry + 'px';
-    requestAnimationFrame(loop);
-  })();
 
   const targets = 'a,button,.btn-primary,.btn-secondary,.btn-nav,.btn-comprar,.produto-card,.dep-card,.feature-card,input,textarea,[onclick]';
   document.querySelectorAll(targets).forEach(el => {
