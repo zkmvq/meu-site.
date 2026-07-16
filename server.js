@@ -660,7 +660,7 @@ const server = http.createServer(async (req, res) => {
     if (!script_name||!price) return jsonRes(res,400,{error:'Dados obrigatórios.'});
     try {
       const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
-      const botToken = cfg.discord?.bot_token;
+      const botToken = process.env.BOT_TOKEN || cfg.discord?.bot_token;
       const categoryId = cfg.discord?.ticket_category_id;
       if (!botToken||!categoryId) return jsonRes(res,500,{error:'Discord não configurado.'});
 
