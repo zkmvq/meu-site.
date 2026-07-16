@@ -21,9 +21,8 @@ const JWT_SECRET      = process.env.JWT_SECRET       || 'zkstudio_secret_2025';
 const DB_URL          = process.env.DATABASE_URL      || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
 const DISCORD_ID      = process.env.DISCORD_CLIENT_ID     || '1527156310393622538';
 const DISCORD_SECRET  = process.env.DISCORD_CLIENT_SECRET || 'h9T6mVy0cp0WhBy2f7JlB2KzmYGjm0fp';
-const SITE_URL        = process.env.RAILWAY_PUBLIC_DOMAIN
-  ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-  : 'http://localhost';
+const SITE_URL = process.env.SITE_URL
+  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'http://localhost');
 
 const pool = new Pool({
   connectionString: DB_URL,
