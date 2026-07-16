@@ -289,11 +289,10 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
 .produto-card:hover .card-glow { opacity:1; }
 .card-image {
   width:calc(100% + 4rem); margin:-2rem -2rem 1.2rem; position:relative; overflow:hidden;
-  height:240px; background:linear-gradient(135deg,rgba(26,86,219,0.08),rgba(26,86,219,0.02));
-  border-bottom:1px solid rgba(26,86,219,0.1);
+  height:240px; background:transparent;
 }
 .card-image img {
-  width:100%; height:100%; object-fit:contain; object-position:center;
+  width:110%; height:100%; object-fit:cover; object-position:center;
   transition:transform 0.4s ease;
 }
 .produto-card:hover .card-image img { transform:scale(1.05); }
@@ -307,7 +306,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
   border:1px dashed rgba(26,86,219,0.2);
   display:flex; align-items:center; justify-content:center;
 }
-.produto-card.featured .card-image { border-bottom-color:rgba(26,86,219,0.2); }
+.produto-card.featured .card-image { border-bottom:none; }
 .produto-card::before {
   content:''; position:absolute; top:0; left:0; right:0; height:2px;
   background:linear-gradient(90deg,transparent,var(--blue),transparent);
