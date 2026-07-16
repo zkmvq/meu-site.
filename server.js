@@ -674,17 +674,20 @@ const server = http.createServer(async (req, res) => {
 
       // Cria canal na categoria de compras
       const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
+      const createBody = JSON.stringify({
+        name: channelName,
+        type: 0,
+        parent_id: String(categoryId),
+        topic: ('Compra: ' + script_name + ' | ' + (user_name||'Anônimo') + ' | ' + (user_email||'sem email')).substring(0,1024)
+      });
+      console.log('[TICKET] Criando canal:', channelName, 'guild:', guildId, 'cat:', categoryId);
       const createRes = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
         method: 'POST',
         headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: channelName,
-          type: 0,
-          parent_id: categoryId,
-          topic: `Compra: ${script_name} | ${user_name||'Anônimo'} | ${user_email||'sem email'}`
-        })
+        body: createBody
       });
       const channel = await createRes.json();
+      console.log('[TICKET] Resposta Discord:', JSON.stringify(channel));
       if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message});
 
       // Envia mensagem de boas-vindas no canal
