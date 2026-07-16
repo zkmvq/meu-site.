@@ -14,8 +14,8 @@
     dot.style.top  = my + 'px';
   });
   (function loop() {
-    rx += (mx - rx) * 0.08;
-    ry += (my - ry) * 0.08;
+    rx += (mx - rx) * 0.18;
+    ry += (my - ry) * 0.18;
     ring.style.left = rx + 'px';
     ring.style.top  = ry + 'px';
     requestAnimationFrame(loop);
@@ -73,16 +73,26 @@ carregarConfig();
 (function() {
   const c = document.getElementById('bgLetters');
   if (!c) return;
-  const chars = '01{}[];()=></*zkstudio';
-  for (let i = 0; i < 55; i++) {
+  const chars = [
+    '0','1','{','}','[',']','(',')',';','=','>','<','/',
+    '*','Z','K','f','n','x','i','let','var','if','fn','=>','::'
+  ];
+  const count = 80;
+  for (let i = 0; i < count; i++) {
     const s = document.createElement('span');
     s.classList.add('bg-letter');
     s.textContent = chars[Math.floor(Math.random() * chars.length)];
     s.style.left = Math.random() * 100 + 'vw';
-    s.style.top  = Math.random() * 100 + 'vh';
-    s.style.fontSize = (Math.random() * 0.7 + 0.65) + 'rem';
-    s.style.animationDuration = (Math.random() * 22 + 14) + 's';
-    s.style.animationDelay    = '-' + (Math.random() * 20) + 's';
+    s.style.top  = '110vh';
+    s.style.fontSize = (Math.random() * 1.1 + 0.6) + 'rem';
+    s.style.opacity  = (Math.random() * 0.6 + 0.2) + '';
+    s.style.animationDuration = (Math.random() * 18 + 10) + 's';
+    s.style.animationDelay    = '-' + (Math.random() * 25) + 's';
+    // Alguns maiores e mais brilhantes
+    if (Math.random() > 0.85) {
+      s.style.fontSize = (Math.random() * 1.5 + 1.2) + 'rem';
+      s.style.color = 'rgba(96,165,250,0.15)';
+    }
     c.appendChild(s);
   }
 })();
@@ -189,11 +199,99 @@ function enviarMensagem(e) {
 }
 
 // ── CODE TYPING ───────────────────────────────────────────────────────
-document.querySelectorAll('.code-line').forEach((l,i) => {
-  l.style.opacity='0'; l.style.transform='translateX(-8px)';
-  l.style.transition=`opacity 0.3s ease ${i*0.1}s, transform 0.3s ease ${i*0.1}s`;
-  setTimeout(()=>{ l.style.opacity='1'; l.style.transform='translateX(0)'; }, 600+i*100);
-});
+(function codeRewrite() {
+  const codeSnippets = [
+    [
+      { ln:'1', code:'<span class="c-comment">-- ZK Studio Premium Script</span>' },
+      { ln:'2', code:'<span class="c-key">local</span> <span class="c-var">ZK</span> <span class="c-op">=</span> <span class="c-str">{}</span>' },
+      { ln:'3', code:'' },
+      { ln:'4', code:'<span class="c-key">function</span> <span class="c-fn">ZK.Initialize</span><span class="c-op">()</span>' },
+      { ln:'5', code:'&nbsp;&nbsp;<span class="c-fn">print</span><span class="c-op">(</span><span class="c-str">"ZK Studio carregado!"</span><span class="c-op">)</span>' },
+      { ln:'6', code:'&nbsp;&nbsp;<span class="c-var">ZK</span><span class="c-op">.</span><span class="c-fn">Setup</span><span class="c-op">()</span>' },
+      { ln:'7', code:'<span class="c-key">end</span>' },
+      { ln:'8', code:'' },
+      { ln:'9', code:'<span class="c-fn">AddEventHandler</span><span class="c-op">(</span><span class="c-str">\'onResourceStart\'</span><span class="c-op">,</span>' },
+      { ln:'10',code:'&nbsp;&nbsp;<span class="c-key">function</span><span class="c-op">()</span> <span class="c-var">ZK</span><span class="c-op">.</span><span class="c-fn">Initialize</span><span class="c-op">()</span> <span class="c-key">end</span><span class="c-op">)</span>' },
+    ],
+    [
+      { ln:'1', code:'<span class="c-comment">-- Sistema de HUD ZK</span>' },
+      { ln:'2', code:'<span class="c-key">local</span> <span class="c-var">HUD</span> <span class="c-op">=</span> <span class="c-str">{}</span>' },
+      { ln:'3', code:'' },
+      { ln:'4', code:'<span class="c-fn">RegisterNetEvent</span><span class="c-op">(</span><span class="c-str">\'zk:updateHud\'</span><span class="c-op">)</span>' },
+      { ln:'5', code:'<span class="c-fn">AddEventHandler</span><span class="c-op">(</span><span class="c-str">\'zk:updateHud\'</span><span class="c-op">,</span>' },
+      { ln:'6', code:'&nbsp;&nbsp;<span class="c-key">function</span><span class="c-op">(</span><span class="c-var">data</span><span class="c-op">)</span>' },
+      { ln:'7', code:'&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-var">HUD</span><span class="c-op">.</span><span class="c-fn">Update</span><span class="c-op">(</span><span class="c-var">data</span><span class="c-op">)</span>' },
+      { ln:'8', code:'&nbsp;&nbsp;<span class="c-key">end</span><span class="c-op">)</span>' },
+      { ln:'9', code:'' },
+      { ln:'10',code:'<span class="c-key">return</span> <span class="c-var">HUD</span>' },
+    ],
+    [
+      { ln:'1', code:'<span class="c-comment">-- Economy System ZK</span>' },
+      { ln:'2', code:'<span class="c-key">local</span> <span class="c-var">Economy</span> <span class="c-op">=</span> <span class="c-str">{}</span>' },
+      { ln:'3', code:'' },
+      { ln:'4', code:'<span class="c-key">function</span> <span class="c-fn">Economy.GetBalance</span><span class="c-op">(</span><span class="c-var">src</span><span class="c-op">)</span>' },
+      { ln:'5', code:'&nbsp;&nbsp;<span class="c-key">local</span> <span class="c-var">bal</span> <span class="c-op">=</span> <span class="c-fn">exports</span><span class="c-op">[</span><span class="c-str">\'zk-bank\'</span><span class="c-op">]</span>' },
+      { ln:'6', code:'&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-op">:</span><span class="c-fn">GetMoney</span><span class="c-op">(</span><span class="c-var">src</span><span class="c-op">)</span>' },
+      { ln:'7', code:'&nbsp;&nbsp;<span class="c-key">return</span> <span class="c-var">bal</span>' },
+      { ln:'8', code:'<span class="c-key">end</span>' },
+      { ln:'9', code:'' },
+      { ln:'10',code:'<span class="c-key">return</span> <span class="c-var">Economy</span>' },
+    ],
+  ];
+
+  const body = document.getElementById('codeBody');
+  if (!body) return;
+
+  let snippetIdx = 0;
+
+  function renderSnippet(lines, callback) {
+    body.innerHTML = '';
+    let lineIdx = 0;
+
+    function typeLine() {
+      if (lineIdx >= lines.length) {
+        // Adiciona cursor no final
+        const last = body.lastElementChild;
+        if (last) last.innerHTML += '<span class="cursor-blink">█</span>';
+        setTimeout(callback, 2800);
+        return;
+      }
+      const line = lines[lineIdx];
+      const div = document.createElement('div');
+      div.className = 'code-line';
+      div.style.opacity = '0';
+      div.style.transform = 'translateX(-6px)';
+      div.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+      div.innerHTML = `<span class="ln">${line.ln}</span><span>${line.code}</span>`;
+      body.appendChild(div);
+
+      requestAnimationFrame(() => {
+        div.style.opacity = '1';
+        div.style.transform = 'translateX(0)';
+      });
+
+      lineIdx++;
+      setTimeout(typeLine, 120);
+    }
+    typeLine();
+  }
+
+  function cycle() {
+    const lines = codeSnippets[snippetIdx % codeSnippets.length];
+    snippetIdx++;
+
+    // Fade out
+    body.style.transition = 'opacity 0.4s';
+    body.style.opacity = '0';
+    setTimeout(() => {
+      body.style.opacity = '1';
+      renderSnippet(lines, cycle);
+    }, 400);
+  }
+
+  // Inicia após 1.5s
+  setTimeout(cycle, 1500);
+})();
 
 // ── GLITCH ────────────────────────────────────────────────────────────
 (function() {
