@@ -7,14 +7,12 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": [
-    "zkstudio",
-    "fivem",
-    "scripts"
-  ],
-  "author": "ZK Studio",
-  "license": "ISC",
   "dependencies": {
-    "ws": "^8.21.1"
-  }
+    "pg": "8.11.3",
+    "bcryptjs": "2.4.3",
+    "jsonwebtoken": "9.0.2"
+  },
+  "keywords": ["zkstudio", "fivem", "scripts"],
+  "author": "ZK Studio",
+  "license": "ISC"
 }

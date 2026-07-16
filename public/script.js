@@ -97,7 +97,41 @@ carregarConfig();
   }
 })();
 
-// ── NAVBAR ────────────────────────────────────────────────────────────
+// ── NAVBAR AUTH ───────────────────────────────────────────────────────
+(function initNavAuth() {
+  const wrap     = document.getElementById('navAuthBtn');
+  const loginBtn = document.getElementById('navLoginBtn');
+  const userBtn  = document.getElementById('navUserBtn');
+  const avatar   = document.getElementById('navUserAvatar');
+  const nameEl   = document.getElementById('navUserName');
+  if (!wrap) return;
+
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'center';
+  wrap.style.gap = '0.6rem';
+
+  const token = localStorage.getItem('zk_token');
+  if (!token) { loginBtn.style.display='inline-flex'; return; }
+
+  // Verifica token
+  fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || !d.user) {
+        localStorage.removeItem('zk_token');
+        loginBtn.style.display = 'inline-flex';
+        return;
+      }
+      loginBtn.style.display  = 'none';
+      userBtn.style.display   = 'inline-flex';
+      avatar.textContent      = d.user.name.charAt(0).toUpperCase();
+      nameEl.textContent      = d.user.name.split(' ')[0];
+      localStorage.setItem('zk_user', JSON.stringify(d.user));
+    })
+    .catch(() => { loginBtn.style.display = 'inline-flex'; });
+})();
+
+
 window.addEventListener('scroll', () => {
   document.getElementById('navbar')?.classList.toggle('scrolled', scrollY > 50);
 
@@ -271,7 +305,10 @@ function enviarMensagem(e) {
           cur.textContent = '█';
           last.appendChild(cur);
         }
-        setTimeout(onDone, 2500);
+        // Aguarda 2.5s mostrando o código completo, depois chama cycle
+        setTimeout(() => {
+          onDone();
+        }, 2500);
         return;
       }
 
@@ -333,16 +370,17 @@ function enviarMensagem(e) {
     const lines = snippets[snIdx % snippets.length];
     snIdx++;
 
-    // Fade out → apaga → começa novo snippet
     body.style.transition = 'opacity 0.35s';
     body.style.opacity = '0';
+
     setTimeout(() => {
+      body.innerHTML = '';
       body.style.opacity = '1';
       typeSnippet(lines, cycle);
-    }, 350);
+    }, 400);
   }
 
-  setTimeout(cycle, 1000);
+  setTimeout(cycle, 800);
 })();
 
 // ── GLITCH ────────────────────────────────────────────────────────────
