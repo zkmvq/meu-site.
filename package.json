@@ -1,0 +1,20 @@
+{
+  "name": "zk-studio-site",
+  "version": "1.0.0",
+  "description": "ZK Studio - Site de Venda de Scripts Premium",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "zkstudio",
+    "fivem",
+    "scripts"
+  ],
+  "author": "ZK Studio",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.21.1"
+  }
+}

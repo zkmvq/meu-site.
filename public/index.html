@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZK Studio — Scripts Premium para FiveM</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- CURSOR -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+  <div id="scroll-progress"></div>
+
+  <!-- BACKGROUND -->
+  <div class="bg-letters" id="bgLetters"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#home" class="nav-logo">
+        <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK Studio" class="logo-img" />
+      </a>
+      <div class="nav-spacer"></div>
+      <ul class="nav-links">
+        <li><a href="#produtos" data-nav="produtos">Produtos</a></li>
+        <li><a href="#features" data-nav="features">Features</a></li>
+        <li><a href="#sobre" data-nav="sobre">Sobre</a></li>
+        <li><a href="#depoimentos" data-nav="depoimentos">Depoimentos</a></li>
+        <li><a href="#contato" data-nav="contato">Contato</a></li>
+      </ul>
+      <a href="#produtos" class="btn-nav">
+        <span>Ver Scripts</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <button class="nav-toggle" id="navToggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav-line"></div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="home">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        ZK STUDIO — SCRIPTS PREMIUM
+      </div>
+      <h1 class="hero-title">
+        Scripts que<br />
+        <span class="highlight">Elevam</span><br />
+        Seu Servidor
+      </h1>
+      <p class="hero-desc">
+        Scripts premium de alta qualidade para FiveM. Prontos para instalar, otimizados e com suporte dedicado para você focar no que importa.
+      </p>
+      <div class="hero-buttons">
+        <a href="#produtos" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Explorar Scripts
+        </a>
+        <a href="#sobre" class="btn-secondary">Saiba Mais</a>
+      </div>
+      <div class="hero-badges-row">
+        <span class="mini-badge">⚡ Entrega Imediata</span>
+        <span class="mini-badge">🛡️ Suporte 24/7</span>
+        <span class="mini-badge">🔄 Updates Grátis</span>
+      </div>
+    </div>
+
+    <div class="hero-code">
+      <div class="code-window">
+        <div class="code-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="code-title">zkstudio.lua — Script</span>
+        </div>
+        <div class="code-body" id="codeBody">
+          <div class="code-line"><span class="ln">1</span><span class="c-comment">-- ZK Studio Premium Script</span></div>
+          <div class="code-line"><span class="ln">2</span><span class="c-key">local</span> <span class="c-var">ZK</span> <span class="c-op">=</span> <span class="c-str">{}</span></div>
+          <div class="code-line"><span class="ln">3</span></div>
+          <div class="code-line"><span class="ln">4</span><span class="c-key">function</span> <span class="c-fn">ZK.Initialize</span><span class="c-op">()</span></div>
+          <div class="code-line"><span class="ln">5</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-fn">print</span><span class="c-op">(</span><span class="c-str">"ZK Studio carregado!"</span><span class="c-op">)</span></div>
+          <div class="code-line"><span class="ln">6</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-var">ZK</span><span class="c-op">.</span><span class="c-fn">Setup</span><span class="c-op">()</span></div>
+          <div class="code-line"><span class="ln">7</span><span class="c-key">end</span></div>
+          <div class="code-line"><span class="ln">8</span></div>
+          <div class="code-line"><span class="ln">9</span><span class="c-fn">AddEventHandler</span><span class="c-op">(</span><span class="c-str">'onResourceStart'</span><span class="c-op">,</span></div>
+          <div class="code-line"><span class="ln">10</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-key">function</span><span class="c-op">()</span> <span class="c-var">ZK</span><span class="c-op">.</span><span class="c-fn">Initialize</span><span class="c-op">()</span> <span class="c-key">end</span><span class="c-op">)</span></div>
+          <div class="code-line"><span class="ln">11</span><span class="cursor-blink">█</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats">
+    <div class="stats-container">
+      <div class="stat-item">
+        <span class="stat-num" data-target="150">0</span>
+        <span class="stat-label">Scripts Vendidos</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" data-target="80">0</span>
+        <span class="stat-label">Clientes Ativos</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" data-target="100">0</span>
+        <span class="stat-label">% Satisfação</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" data-target="24">0</span>
+        <span class="stat-label">Horas de Suporte</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">// por que nos escolher</span>
+        <h2 class="section-title">Por que a <span class="highlight">ZK Studio?</span></h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Performance Máxima</h3>
+          <p>Todos os scripts são otimizados para rodar com mínimo de recursos, sem travamentos.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Anti-Cheat Ready</h3>
+          <p>Scripts desenvolvidos com proteção nativa contra cheats e exploits comuns.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔧</div>
+          <h3>Fácil Instalação</h3>
+          <p>Documentação completa e suporte na instalação para você não travar em nada.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔄</div>
+          <h3>Updates Vitalícios</h3>
+          <p>Todas as atualizações futuras do script são enviadas gratuitamente para você.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUTOS -->
+  <section class="produtos" id="produtos">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">// nossos produtos</span>
+        <h2 class="section-title">Scripts <span class="highlight">Premium</span></h2>
+        <p class="section-desc">Cada script desenvolvido com qualidade e performance para o seu servidor.</p>
+      </div>
+      <div class="produtos-grid">
+
+        <div class="produto-card featured" data-tilt>
+          <div class="card-glow"></div>
+          <div class="card-badge">⭐ DESTAQUE</div>
+          <div class="card-icon">🎯</div>
+          <h3>Paineis Personalizados</h3>
+          <p>Interface visual completa e otimizada para FiveM com status em tempo real.</p>
+          <div class="card-tags"><span>FiveM</span><span>Lua</span><span>NUI</span></div>
+          <div class="card-footer">
+            <span class="price">R$ 49,90</span>
+            <button class="btn-comprar" onclick="openModal('HUD Personalizado', 'R$ 49,90')">Comprar</button>
+          </div>
+        </div>
+
+        <div class="produto-card" data-tilt>
+          <div class="card-glow"></div>
+          <div class="card-icon">👮‍♂️</div>
+          <h3>Sistema de Prisão</h3>
+          <p>Painel prisao completo. Com farm, finança e muito mais.</p>
+          <div class="card-tags"><span>FiveM</span><span>Lua</span><span>SQL</span></div>
+          <div class="card-footer">
+            <span class="price">R$ 39,90</span>
+            <button class="btn-comprar" onclick="openModal('Sistema de Garagem', 'R$ 39,90')">Comprar</button>
+          </div>
+        </div>
+
+        <div class="produto-card" data-tilt>
+          <div class="card-glow"></div>
+          <div class="card-icon">💰</div>
+          <h3>Economy System</h3>
+          <p>Sistema econômico robusto com banco, transferências e histórico.</p>
+          <div class="card-tags"><span>FiveM</span><span>Lua</span><span>MySQL</span></div>
+          <div class="card-footer">
+            <span class="price">R$ 59,90</span>
+            <button class="btn-comprar" onclick="openModal('Economy System', 'R$ 59,90')">Comprar</button>
+          </div>
+        </div>
+
+        <div class="produto-card" data-tilt>
+          <div class="card-glow"></div>
+          <div class="card-icon">💎</div>
+          <h3>Sistema Peds</h3>
+          <p>Compra, venda e personalização de Peds e Estilos interativos.</p>
+          <div class="card-tags"><span>FiveM</span><span>Lua</span><span>SQL</span></div>
+          <div class="card-footer">
+            <span class="price">R$ 69,90</span>
+            <button class="btn-comprar" onclick="openModal('Sistema de Casas', 'R$ 69,90')">Comprar</button>
+          </div>
+        </div>
+
+        <div class="produto-card" data-tilt>
+          <div class="card-glow"></div>
+          <div class="card-icon">⚔️</div>
+          <h3>Anti-cheater</h3>
+          <p>Sistema de combate avançado Contra Ataques Hackes e Explosao Crashes Unicos.</p>
+          <div class="card-tags"><span>FiveM</span><span>Lua</span><span>NUI</span></div>
+          <div class="card-footer">
+            <span class="price">R$ 44,90</span>
+            <button class="btn-comprar" onclick="openModal('Combat System', 'R$ 44,90')">Comprar</button>
+          </div>
+        </div>
+
+        <div class="produto-card" data-tilt>
+          <div class="card-glow"></div>
+          <div class="card-icon">📋</div>
+          <h3>Job System</h3>
+          <p>Sistema de empregos completo com missões, salários e progressão.</p>
+          <div class="card-tags"><span>FiveM</span><span>Lua</span><span>MySQL</span></div>
+          <div class="card-footer">
+            <span class="price">R$ 79,90</span>
+            <button class="btn-comprar" onclick="openModal('Job System', 'R$ 79,90')">Comprar</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SOBRE -->
+  <section class="sobre" id="sobre">
+    <div class="section-container sobre-grid">
+      <div class="sobre-texto">
+        <span class="section-tag">// sobre nós</span>
+        <h2 class="section-title">O que é a <span class="highlight">ZK Studio?</span></h2>
+        <p>Somos um estúdio especializado em desenvolvimento de scripts para servidores de jogos, com foco em qualidade, performance e suporte ao cliente.</p>
+        <p>Cada script passa por testes rigorosos antes de ser disponibilizado, garantindo que funcione perfeitamente no seu servidor.</p>
+        <ul class="sobre-lista">
+          <li><span class="lista-check">✓</span> Scripts otimizados e sem bugs</li>
+          <li><span class="lista-check">✓</span> Suporte via Discord 24/7</li>
+          <li><span class="lista-check">✓</span> Atualizações gratuitas vitalícias</li>
+          <li><span class="lista-check">✓</span> Entrega imediata após pagamento</li>
+        </ul>
+        <a href="#contato" class="btn-primary">Falar Conosco</a>
+      </div>
+      <div class="sobre-image">
+        <div class="sobre-img-wrap">
+          <img src="/logos/BANNER ZK STUDIO.png" alt="ZK Studio Banner" />
+          <div class="sobre-img-glow"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPOIMENTOS -->
+  <section class="depoimentos" id="depoimentos">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">// depoimentos</span>
+        <h2 class="section-title">O que dizem nossos <span class="highlight">Clientes</span></h2>
+      </div>
+      <div class="dep-grid">
+        <div class="dep-card">
+          <div class="dep-quote">"</div>
+          <div class="dep-stars">★★★★★</div>
+          <p>Script incrível, instalei em menos de 5 minutos e funcionou perfeitamente. Suporte top!</p>
+          <div class="dep-autor">
+            <div class="dep-avatar">M</div>
+            <div><strong>Matheus S.</strong><span>Dono de servidor RP</span></div>
+          </div>
+        </div>
+        <div class="dep-card">
+          <div class="dep-quote">"</div>
+          <div class="dep-stars">★★★★★</div>
+          <p>Comprei o HUD e o sistema de garagem, ambos funcionando perfeitamente. Vale cada centavo!</p>
+          <div class="dep-autor">
+            <div class="dep-avatar">G</div>
+            <div><strong>Gabriel T.</strong><span>Developer FiveM</span></div>
+          </div>
+        </div>
+        <div class="dep-card">
+          <div class="dep-quote">"</div>
+          <div class="dep-stars">★★★★★</div>
+          <p>Melhor loja de scripts que já usei. Qualidade absurda e preço justo. Recomendo!</p>
+          <div class="dep-autor">
+            <div class="dep-avatar">L</div>
+            <div><strong>Lucas R.</strong><span>Servidor Brasil RP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTATO -->
+  <section class="contato" id="contato">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">// contato</span>
+        <h2 class="section-title">Entre em <span class="highlight">Contato</span></h2>
+        <p class="section-desc">Dúvidas? Sugestões? Fale conosco!</p>
+      </div>
+      <div class="contato-grid">
+        <div class="contato-info">
+          <div class="contato-item">
+            <div class="contato-icon-wrap">💬</div>
+            <div><strong>Discord</strong><span data-text="discord">discord.gg/zkstudio</span></div>
+          </div>
+          <div class="contato-item">
+            <div class="contato-icon-wrap">📧</div>
+            <div><strong>Email</strong><span data-text="email">contato@zkstudio.com</span></div>
+          </div>
+          <div class="contato-item">
+            <div class="contato-icon-wrap">📱</div>
+            <div><strong>Instagram</strong><span data-text="instagram">@zkstudio</span></div>
+          </div>
+        </div>
+        <form class="contato-form" onsubmit="enviarMensagem(event)">
+          <div class="form-group">
+            <input type="text" placeholder="Seu nome" required />
+          </div>
+          <div class="form-group">
+            <input type="email" placeholder="Seu email" required />
+          </div>
+          <div class="form-group">
+            <textarea placeholder="Sua mensagem..." rows="4" required></textarea>
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+            Enviar Mensagem
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <div class="cta-inner">
+      <div class="cta-text">
+        <h2>Pronto para elevar seu servidor?</h2>
+        <p>Junte-se a mais de 80 clientes que já transformaram seus servidores com a ZK Studio.</p>
+      </div>
+      <a href="#produtos" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Ver Todos os Scripts
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-logo">
+        <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK Studio" />
+        <p>Scripts premium para elevar seu servidor FiveM.</p>
+        <div class="footer-social">
+          <a href="#" data-link="discord" class="social-btn">Discord</a>
+          <a href="#" data-link="instagram" class="social-btn">Instagram</a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <h4>Navegação</h4>
+        <a href="#home">Início</a>
+        <a href="#produtos">Produtos</a>
+        <a href="#features">Features</a>
+        <a href="#sobre">Sobre</a>
+        <a href="#contato">Contato</a>
+      </div>
+      <div class="footer-links">
+        <h4>Social</h4>
+        <a href="#" data-link="discord">Discord</a>
+        <a href="#" data-link="instagram">Instagram</a>
+        <a href="#" data-link="youtube">YouTube</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p data-text="copyright">© 2025 ZK Studio. Todos os direitos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK Studio" class="modal-logo" />
+      <h3 id="modalTitle">Script</h3>
+      <p id="modalPrice" class="modal-price"></p>
+      <p class="modal-desc">Para finalizar a compra, entre em contato via Discord ou WhatsApp. Entrega imediata após confirmação do pagamento.</p>
+      <div class="modal-buttons">
+        <a href="#" class="btn-primary" data-link="discord">💬 Discord</a>
+        <a href="#" class="btn-secondary" data-link="whatsapp">📱 WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- WIDGET DE SUPORTE -->
+  <div id="chat-widget">
+    <!-- Botão flutuante -->
+    <button id="chat-toggle" onclick="toggleChat()" aria-label="Suporte">
+      <span id="chat-toggle-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </span>
+      <span id="chat-unread-badge" style="display:none">1</span>
+    </button>
+
+    <!-- Janela do chat -->
+    <div id="chat-box" class="chat-box" style="display:none">
+      <!-- Header -->
+      <div class="cb-header">
+        <div class="cb-header-info">
+          <div class="cb-avatar-wrap">
+            <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" class="cb-logo" />
+            <span class="cb-online-dot"></span>
+          </div>
+          <div>
+            <div class="cb-name">ZK Studio</div>
+            <div class="cb-status">🟢 Online agora</div>
+          </div>
+        </div>
+        <button class="cb-close" onclick="toggleChat()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tela de início (antes de abrir chat) -->
+      <div id="chat-start-screen" class="cb-start">
+        <div class="cb-welcome-img">
+          <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />
+        </div>
+        <h3>Olá! 👋</h3>
+        <p>Bem-vindo ao suporte da <strong>ZK Studio</strong>.<br>Como posso te ajudar hoje?</p>
+        <input id="chat-name-input" type="text" placeholder="Seu nome (opcional)" maxlength="30" />
+        <button class="cb-start-btn" onclick="iniciarChat()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Iniciar Conversa
+        </button>
+      </div>
+
+      <!-- Tela de chat ativo -->
+      <div id="chat-active-screen" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+        <div id="chat-messages" class="cb-messages"></div>
+        <div id="chat-closed-notice" style="display:none" class="cb-closed-notice">
+          Conversa encerrada pelo suporte. Obrigado! 👋
+        </div>
+        <div id="chat-input-wrap" class="cb-input-wrap">
+          <textarea id="chat-input" placeholder="Digite sua mensagem..." rows="1"
+            onkeydown="chatKeyDown(event)"
+            oninput="chatAutoResize(this)"></textarea>
+          <button id="chat-send-btn" onclick="enviarMensagem()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
