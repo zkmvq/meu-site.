@@ -198,99 +198,151 @@ function enviarMensagem(e) {
   e.target.reset();
 }
 
-// ── CODE TYPING ───────────────────────────────────────────────────────
+// ── CODE TYPING — letra por letra ─────────────────────────────────────
 (function codeRewrite() {
-  const codeSnippets = [
+  // Cada snippet: array de { ln, text, color }
+  // color: 'comment' | 'key' | 'fn' | 'str' | 'var' | 'op' | ''
+  const snippets = [
     [
-      { ln:'1', code:'<span class="c-comment">-- ZK Studio Premium Script</span>' },
-      { ln:'2', code:'<span class="c-key">local</span> <span class="c-var">ZK</span> <span class="c-op">=</span> <span class="c-str">{}</span>' },
-      { ln:'3', code:'' },
-      { ln:'4', code:'<span class="c-key">function</span> <span class="c-fn">ZK.Initialize</span><span class="c-op">()</span>' },
-      { ln:'5', code:'&nbsp;&nbsp;<span class="c-fn">print</span><span class="c-op">(</span><span class="c-str">"ZK Studio carregado!"</span><span class="c-op">)</span>' },
-      { ln:'6', code:'&nbsp;&nbsp;<span class="c-var">ZK</span><span class="c-op">.</span><span class="c-fn">Setup</span><span class="c-op">()</span>' },
-      { ln:'7', code:'<span class="c-key">end</span>' },
-      { ln:'8', code:'' },
-      { ln:'9', code:'<span class="c-fn">AddEventHandler</span><span class="c-op">(</span><span class="c-str">\'onResourceStart\'</span><span class="c-op">,</span>' },
-      { ln:'10',code:'&nbsp;&nbsp;<span class="c-key">function</span><span class="c-op">()</span> <span class="c-var">ZK</span><span class="c-op">.</span><span class="c-fn">Initialize</span><span class="c-op">()</span> <span class="c-key">end</span><span class="c-op">)</span>' },
+      { ln:'1',  text:'-- ZK Studio Premium Script', color:'comment' },
+      { ln:'2',  text:'local ZK = {}',               color:'mixed1' },
+      { ln:'3',  text:'',                             color:'' },
+      { ln:'4',  text:'function ZK.Initialize()',     color:'mixed2' },
+      { ln:'5',  text:'  print("ZK Studio!")',        color:'mixed3' },
+      { ln:'6',  text:'  ZK.Setup()',                 color:'mixed4' },
+      { ln:'7',  text:'end',                          color:'key' },
+      { ln:'8',  text:'',                             color:'' },
+      { ln:'9',  text:"AddEventHandler('onResourceStart',", color:'mixed5' },
+      { ln:'10', text:'  function() ZK.Initialize() end)', color:'mixed6' },
     ],
     [
-      { ln:'1', code:'<span class="c-comment">-- Sistema de HUD ZK</span>' },
-      { ln:'2', code:'<span class="c-key">local</span> <span class="c-var">HUD</span> <span class="c-op">=</span> <span class="c-str">{}</span>' },
-      { ln:'3', code:'' },
-      { ln:'4', code:'<span class="c-fn">RegisterNetEvent</span><span class="c-op">(</span><span class="c-str">\'zk:updateHud\'</span><span class="c-op">)</span>' },
-      { ln:'5', code:'<span class="c-fn">AddEventHandler</span><span class="c-op">(</span><span class="c-str">\'zk:updateHud\'</span><span class="c-op">,</span>' },
-      { ln:'6', code:'&nbsp;&nbsp;<span class="c-key">function</span><span class="c-op">(</span><span class="c-var">data</span><span class="c-op">)</span>' },
-      { ln:'7', code:'&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-var">HUD</span><span class="c-op">.</span><span class="c-fn">Update</span><span class="c-op">(</span><span class="c-var">data</span><span class="c-op">)</span>' },
-      { ln:'8', code:'&nbsp;&nbsp;<span class="c-key">end</span><span class="c-op">)</span>' },
-      { ln:'9', code:'' },
-      { ln:'10',code:'<span class="c-key">return</span> <span class="c-var">HUD</span>' },
+      { ln:'1',  text:'-- Sistema HUD ZK Studio',    color:'comment' },
+      { ln:'2',  text:'local HUD = {}',              color:'mixed1' },
+      { ln:'3',  text:'',                            color:'' },
+      { ln:'4',  text:"RegisterNetEvent('zk:hud')", color:'fn' },
+      { ln:'5',  text:"AddEventHandler('zk:hud',",  color:'fn' },
+      { ln:'6',  text:'  function(data)',            color:'mixed2' },
+      { ln:'7',  text:'    HUD.Update(data)',        color:'mixed4' },
+      { ln:'8',  text:'  end)',                      color:'key' },
+      { ln:'9',  text:'',                            color:'' },
+      { ln:'10', text:'return HUD',                  color:'mixed6' },
     ],
     [
-      { ln:'1', code:'<span class="c-comment">-- Economy System ZK</span>' },
-      { ln:'2', code:'<span class="c-key">local</span> <span class="c-var">Economy</span> <span class="c-op">=</span> <span class="c-str">{}</span>' },
-      { ln:'3', code:'' },
-      { ln:'4', code:'<span class="c-key">function</span> <span class="c-fn">Economy.GetBalance</span><span class="c-op">(</span><span class="c-var">src</span><span class="c-op">)</span>' },
-      { ln:'5', code:'&nbsp;&nbsp;<span class="c-key">local</span> <span class="c-var">bal</span> <span class="c-op">=</span> <span class="c-fn">exports</span><span class="c-op">[</span><span class="c-str">\'zk-bank\'</span><span class="c-op">]</span>' },
-      { ln:'6', code:'&nbsp;&nbsp;&nbsp;&nbsp;<span class="c-op">:</span><span class="c-fn">GetMoney</span><span class="c-op">(</span><span class="c-var">src</span><span class="c-op">)</span>' },
-      { ln:'7', code:'&nbsp;&nbsp;<span class="c-key">return</span> <span class="c-var">bal</span>' },
-      { ln:'8', code:'<span class="c-key">end</span>' },
-      { ln:'9', code:'' },
-      { ln:'10',code:'<span class="c-key">return</span> <span class="c-var">Economy</span>' },
+      { ln:'1',  text:'-- Economy System ZK',        color:'comment' },
+      { ln:'2',  text:'local Economy = {}',          color:'mixed1' },
+      { ln:'3',  text:'',                            color:'' },
+      { ln:'4',  text:'function Economy.Get(src)',   color:'mixed2' },
+      { ln:'5',  text:"  local bal = exports[",     color:'mixed3' },
+      { ln:'6',  text:"    'zk-bank']:GetMoney(src)",color:'str' },
+      { ln:'7',  text:'  return bal',               color:'mixed4' },
+      { ln:'8',  text:'end',                        color:'key' },
+      { ln:'9',  text:'',                           color:'' },
+      { ln:'10', text:'return Economy',             color:'mixed6' },
     ],
   ];
+
+  // Mapeia cores simples para classes CSS
+  function colorClass(c) {
+    const map = {
+      comment:'c-comment', key:'c-key', fn:'c-fn',
+      str:'c-str', var:'c-var', op:'c-op',
+      mixed1:'c-var', mixed2:'c-fn', mixed3:'c-str',
+      mixed4:'c-var', mixed5:'c-fn', mixed6:'c-op',
+    };
+    return map[c] || '';
+  }
 
   const body = document.getElementById('codeBody');
   if (!body) return;
 
-  let snippetIdx = 0;
+  let snIdx = 0;
 
-  function renderSnippet(lines, callback) {
+  function typeSnippet(lines, onDone) {
     body.innerHTML = '';
-    let lineIdx = 0;
+    let li = 0; // índice da linha atual
 
-    function typeLine() {
-      if (lineIdx >= lines.length) {
-        // Adiciona cursor no final
+    function nextLine() {
+      if (li >= lines.length) {
+        // cursor piscando no final
         const last = body.lastElementChild;
-        if (last) last.innerHTML += '<span class="cursor-blink">█</span>';
-        setTimeout(callback, 2800);
+        if (last) {
+          const cur = document.createElement('span');
+          cur.className = 'cursor-blink';
+          cur.textContent = '█';
+          last.appendChild(cur);
+        }
+        setTimeout(onDone, 2500);
         return;
       }
-      const line = lines[lineIdx];
+
+      const line = lines[li++];
+
+      // Cria a div da linha com número
       const div = document.createElement('div');
       div.className = 'code-line';
-      div.style.opacity = '0';
-      div.style.transform = 'translateX(-6px)';
-      div.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-      div.innerHTML = `<span class="ln">${line.ln}</span><span>${line.code}</span>`;
+      const lnSpan = document.createElement('span');
+      lnSpan.className = 'ln';
+      lnSpan.textContent = line.ln;
+      div.appendChild(lnSpan);
+
+      // Span do conteúdo que vai sendo preenchido
+      const contentSpan = document.createElement('span');
+      const cls = colorClass(line.color);
+      if (cls) contentSpan.className = cls;
+      div.appendChild(contentSpan);
+
+      // Cursor de digitação
+      const cur = document.createElement('span');
+      cur.className = 'cursor-blink';
+      cur.textContent = '█';
+      div.appendChild(cur);
+
       body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
 
-      requestAnimationFrame(() => {
-        div.style.opacity = '1';
-        div.style.transform = 'translateX(0)';
-      });
+      // Digita letra por letra
+      const chars = line.text.split('');
+      let ci = 0;
 
-      lineIdx++;
-      setTimeout(typeLine, 120);
+      function typeChar() {
+        if (ci >= chars.length) {
+          // Remove cursor desta linha, vai pra próxima
+          cur.remove();
+          setTimeout(nextLine, 60);
+          return;
+        }
+        contentSpan.textContent += chars[ci++];
+        body.scrollTop = body.scrollHeight;
+        // Velocidade: 28ms por caractere — rápido como digitação real
+        setTimeout(typeChar, 28);
+      }
+
+      // Linha vazia: só pausa
+      if (chars.length === 0) {
+        cur.remove();
+        setTimeout(nextLine, 80);
+      } else {
+        typeChar();
+      }
     }
-    typeLine();
+
+    nextLine();
   }
 
   function cycle() {
-    const lines = codeSnippets[snippetIdx % codeSnippets.length];
-    snippetIdx++;
+    const lines = snippets[snIdx % snippets.length];
+    snIdx++;
 
-    // Fade out
-    body.style.transition = 'opacity 0.4s';
+    // Fade out → apaga → começa novo snippet
+    body.style.transition = 'opacity 0.35s';
     body.style.opacity = '0';
     setTimeout(() => {
       body.style.opacity = '1';
-      renderSnippet(lines, cycle);
-    }, 400);
+      typeSnippet(lines, cycle);
+    }, 350);
   }
 
-  // Inicia após 1.5s
-  setTimeout(cycle, 1500);
+  setTimeout(cycle, 1000);
 })();
 
 // ── GLITCH ────────────────────────────────────────────────────────────
