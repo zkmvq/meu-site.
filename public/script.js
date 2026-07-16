@@ -179,7 +179,6 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 // ── MOBILE NAV ────────────────────────────────────────────────────────
 document.getElementById('navToggle')?.addEventListener('click', () => {
   const nl = document.querySelector('.nav-links');
-  const bn = document.querySelector('.btn-nav');
   if (!nl) return;
   const open = nl.style.display === 'flex';
   Object.assign(nl.style, {
@@ -188,7 +187,6 @@ document.getElementById('navToggle')?.addEventListener('click', () => {
     background:'rgba(3,8,28,0.97)', padding:'1.5rem 2rem',
     borderBottom:'1px solid rgba(26,86,219,0.2)', zIndex:'999'
   });
-  if (bn) bn.style.display = open ? 'none' : 'block';
 });
 
 // ── COUNTER ───────────────────────────────────────────────────────────
@@ -539,4 +537,166 @@ function enviarMensagem(e) {
     } catch(e) {}
     if (!chatClosed) setTimeout(pollMessages, 300);
   }
+})();
+
+// ==============================
+//   CARRINHO
+// ==============================
+(function() {
+  const CART_KEY = 'zk_cart';
+  let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+  let appliedCoupon = null;
+
+  function saveCart() {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    updateCartBadge();
+  }
+
+  function updateCartBadge() {
+    const badge = document.getElementById('cartCount');
+    if (!badge) return;
+    const total = cart.reduce((s, i) => s + i.quantity, 0);
+    if (total > 0) { badge.style.display = 'block'; badge.textContent = total; }
+    else badge.style.display = 'none';
+  }
+
+  function parsePrice(str) {
+    const m = str.match(/[\d.,]+/);
+    if (!m) return 0;
+    return parseFloat(m[0].replace('.','').replace(',','.'));
+  }
+
+  function formatPrice(val) {
+    return 'R$ ' + val.toFixed(2).replace('.',',');
+  }
+
+  window.addToCart = function(name, price) {
+    const exist = cart.find(i => i.name === name);
+    if (exist) { exist.quantity++; }
+    else { cart.push({ name, price, quantity: 1 }); }
+    saveCart();
+    renderCart();
+    showToast('✅ ' + name + ' adicionado ao carrinho!');
+  };
+
+  window.openCart = function() {
+    renderCart();
+    document.getElementById('cartOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeCart = function() {
+    document.getElementById('cartOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+  };
+
+  window.updateCartQty = function(idx, delta) {
+    cart[idx].quantity += delta;
+    if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+    saveCart();
+    renderCart();
+  };
+
+  window.removeCartItem = function(idx) {
+    cart.splice(idx, 1);
+    saveCart();
+    renderCart();
+  };
+
+  window.clearCart = function() {
+    cart = [];
+    appliedCoupon = null;
+    saveCart();
+    renderCart();
+  };
+
+  window.applyCoupon = async function() {
+    const code = document.getElementById('cartCouponInput').value.trim();
+    const msg = document.getElementById('cartCouponMsg');
+    if (!code) { msg.className = 'cart-coupon-msg error'; msg.textContent = 'Digite um cupom.'; return; }
+    try {
+      const r = await fetch('/coupon/validate', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ code })
+      });
+      const d = await r.json();
+      if (!r.ok) { msg.className = 'cart-coupon-msg error'; msg.textContent = d.error || 'Cupom inválido.'; appliedCoupon = null; return; }
+      appliedCoupon = d.coupon;
+      msg.className = 'cart-coupon-msg success';
+      msg.textContent = '✅ Cupom aplicado! (' + (d.coupon.discount_type === 'percent' ? d.coupon.discount_value + '%' : formatPrice(d.coupon.discount_value)) + ' de desconto)';
+      renderCart();
+    } catch(e) {
+      msg.className = 'cart-coupon-msg error'; msg.textContent = 'Erro ao validar cupom.';
+    }
+  };
+
+  window.checkoutCart = function() {
+    if (!cart.length) return;
+    const total = calcTotal();
+    openModal('Carrinho — ' + cart.length + ' item(s)', formatPrice(total));
+  };
+
+  function calcTotal() {
+    let total = cart.reduce((s, i) => s + parsePrice(i.price) * i.quantity, 0);
+    if (appliedCoupon) {
+      if (appliedCoupon.discount_type === 'percent') {
+        total = total * (1 - appliedCoupon.discount_value / 100);
+      } else {
+        total = total - appliedCoupon.discount_value;
+      }
+      if (total < 0) total = 0;
+    }
+    return total;
+  }
+
+  function renderCart() {
+    const itemsEl = document.getElementById('cartItems');
+    const footerEl = document.getElementById('cartFooter');
+    const discountEl = document.getElementById('cartDiscount');
+    if (!itemsEl) return;
+
+    if (!cart.length) {
+      itemsEl.innerHTML = '<div class="cart-empty">Seu carrinho está vazio.</div>';
+      footerEl.style.display = 'none';
+      updateCartBadge();
+      return;
+    }
+
+    itemsEl.innerHTML = cart.map((item, i) =>
+      '<div class="cart-item">' +
+        '<div class="cart-item-info">' +
+          '<div class="cart-item-name">' + escapeCartHtml(item.name) + '</div>' +
+          '<div class="cart-item-price">' + escapeCartHtml(item.price) + '</div>' +
+        '</div>' +
+        '<div class="cart-item-qty">' +
+          '<button onclick="updateCartQty('+i+',-1)">−</button>' +
+          '<span>' + item.quantity + '</span>' +
+          '<button onclick="updateCartQty('+i+',1)">+</button>' +
+        '</div>' +
+        '<button class="cart-item-remove" onclick="removeCartItem('+i+')" title="Remover">🗑</button>' +
+      '</div>'
+    ).join('');
+
+    const total = calcTotal();
+    document.getElementById('cartTotal').textContent = formatPrice(total);
+
+    if (appliedCoupon) {
+      const rawTotal = cart.reduce((s, i) => s + parsePrice(i.price) * i.quantity, 0);
+      const saved = rawTotal - total;
+      discountEl.style.display = 'block';
+      discountEl.textContent = 'Desconto: -' + formatPrice(saved) + ' (' + appliedCoupon.code + ')';
+    } else {
+      discountEl.style.display = 'none';
+    }
+
+    footerEl.style.display = 'block';
+    updateCartBadge();
+  }
+
+  function escapeCartHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  updateCartBadge();
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCart(); });
 })();

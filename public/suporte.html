@@ -136,6 +136,9 @@
     <div class="sidebar-item" id="sidebarStaff" onclick="showPage('staff')" data-page="staff" style="display:none">
       <span class="si-icon">🛡️</span> Gerenciar Staff
     </div>
+    <div class="sidebar-item" id="sidebarCupons" onclick="showPage('cupons')" data-page="cupons" style="display:none">
+      <span class="si-icon">🏷️</span> Cupons
+    </div>
     <div class="sidebar-item" onclick="window.location.href='/staff.html'">
       <span class="si-icon">⚙️</span> Painel Admin
     </div>
@@ -217,6 +220,27 @@
       <div class="page-title" style="font-size:1rem"><span class="pt-icon">👮</span> Staff Atual</div>
       <div class="table-wrap" id="staffTable"><div class="loading">Carregando...</div></div>
     </div>
+
+    <!-- CUPONS -->
+    <div class="page" id="page-cupons">
+      <div class="page-title"><span class="pt-icon">🏷️</span> Gerenciar Cupons</div>
+      <div class="form-card">
+        <h3>Criar Cupom</h3>
+        <div class="msg" id="couponMsg"></div>
+        <div class="form-row">
+          <input class="form-input" id="couponCode" placeholder="Código (ex: DESCONTO10)" style="max-width:200px;" />
+          <select class="form-input" id="couponType" style="max-width:150px;">
+            <option value="percent">Percentual (%)</option>
+            <option value="fixed">Valor Fixo (R$)</option>
+          </select>
+          <input class="form-input" id="couponValue" placeholder="Valor" type="number" step="0.01" min="0" style="max-width:120px;" />
+          <input class="form-input" id="couponMaxUses" placeholder="Limite (0=ilimitado)" type="number" min="0" style="max-width:150px;" />
+          <input class="form-input" id="couponValidUntil" type="date" style="max-width:180px;" />
+          <button class="btn-primary" onclick="createCoupon()">Criar Cupom</button>
+        </div>
+      </div>
+      <div class="table-wrap" id="couponTable"><div class="loading">Carregando...</div></div>
+    </div>
   </div>
 </div>
 
@@ -240,6 +264,7 @@ async function init() {
     document.getElementById('blocked').style.display = 'none';
     document.getElementById('mainLayout').style.display = 'flex';
     if (isOwner) document.getElementById('sidebarStaff').style.display = 'flex';
+    if (isOwner) document.getElementById('sidebarCupons').style.display = 'flex';
     const me = await fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
     if (me.user) {
       const av = document.getElementById('navAvatar');
@@ -265,6 +290,7 @@ function showPage(name) {
   document.getElementById('page-'+name).classList.add('active');
   document.querySelector('[data-page="'+name+'"]')?.classList.add('active');
   if (name === 'staff') loadStaff();
+  if (name === 'cupons') loadCoupons();
 }
 
 // ── TICKETS ──────────────────────────────────────────────────────────
@@ -702,6 +728,72 @@ function logout() {
   localStorage.removeItem('zk_user');
   window.location.href='/';
 }
+// ── CUPONS ──────────────────────────────────────────────────────────────
+async function loadCoupons() {
+  document.getElementById('couponTable').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const r = await fetch('/coupon/list', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    const list = d.coupons || [];
+    if (!list.length) {
+      document.getElementById('couponTable').innerHTML = '<div class="loading">Nenhum cupom criado.</div>';
+      return;
+    }
+    document.getElementById('couponTable').innerHTML = '<table><thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Usos</th><th>Limite</th><th>Validade</th><th>Status</th><th>Ação</th></tr></thead><tbody>'+
+      list.map(c => {
+        const typeLabel = c.discount_type === 'percent' ? '%' : 'R$';
+        const validUntil = c.valid_until ? new Date(c.valid_until).toLocaleDateString('pt-BR') : 'Sem limite';
+        const isActive = c.active && (!c.valid_until || new Date(c.valid_until) >= new Date()) && (c.max_uses === 0 || c.used_count < c.max_uses);
+        return '<tr>'+
+          '<td class="td-mono" style="font-weight:700;color:var(--white);">'+esc(c.code)+'</td>'+
+          '<td>'+(c.discount_type === 'percent' ? 'Percentual' : 'Fixo')+'</td>'+
+          '<td class="td-mono" style="color:var(--blue-bright);">'+c.discount_value+' '+typeLabel+'</td>'+
+          '<td class="td-mono">'+c.used_count+'</td>'+
+          '<td class="td-mono">'+(c.max_uses > 0 ? c.max_uses : '∞')+'</td>'+
+          '<td class="td-mono">'+validUntil+'</td>'+
+          '<td><span class="badge '+(isActive?'badge-green':'badge-red')+'">'+(isActive?'Ativo':'Inativo')+'</span></td>'+
+          '<td><button class="btn-danger btn-sm" onclick="deleteCoupon(\''+esc(c.code)+'\')">Deletar</button></td>'+
+        '</tr>';
+      }).join('')+
+    '</tbody></table>';
+  } catch { document.getElementById('couponTable').innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+
+async function createCoupon() {
+  const code = document.getElementById('couponCode').value.trim();
+  const discount_type = document.getElementById('couponType').value;
+  const discount_value = parseFloat(document.getElementById('couponValue').value);
+  const max_uses = parseInt(document.getElementById('couponMaxUses').value) || 0;
+  const valid_until = document.getElementById('couponValidUntil').value || null;
+  if (!code || !discount_value || discount_value <= 0) {
+    showMsg('couponMsg','error','Preencha código e valor.');
+    return;
+  }
+  const r = await fetch('/coupon/create', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ code, discount_type, discount_value, max_uses, valid_until })
+  });
+  const d = await r.json();
+  if (r.ok) {
+    showMsg('couponMsg','success','Cupom "'+code.toUpperCase()+'" criado!');
+    document.getElementById('couponCode').value='';
+    document.getElementById('couponValue').value='';
+    document.getElementById('couponMaxUses').value='';
+    document.getElementById('couponValidUntil').value='';
+    loadCoupons();
+  } else showMsg('couponMsg','error', d.error||'Erro.');
+}
+
+async function deleteCoupon(code) {
+  if (!confirm('Deletar o cupom "'+code+'"?')) return;
+  const r = await fetch('/coupon/delete', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ code })
+  });
+  if (r.ok) loadCoupons();
+  else alert('Erro ao deletar.');
+}
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 init();

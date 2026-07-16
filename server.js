@@ -67,6 +67,25 @@ async function initDB() {
       message TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS coupons (
+      id SERIAL PRIMARY KEY,
+      code VARCHAR(50) UNIQUE NOT NULL,
+      discount_type VARCHAR(10) NOT NULL DEFAULT 'percent',
+      discount_value NUMERIC(10,2) NOT NULL,
+      max_uses INTEGER DEFAULT 0,
+      used_count INTEGER DEFAULT 0,
+      valid_until TIMESTAMP,
+      active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS cart_items (
+      id SERIAL PRIMARY KEY,
+      session_id VARCHAR(100) NOT NULL,
+      product_name VARCHAR(200) NOT NULL,
+      product_price VARCHAR(20) NOT NULL,
+      quantity INTEGER DEFAULT 1,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   // Migração segura
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`).catch(()=>{});
@@ -303,7 +322,7 @@ const server = http.createServer(async (req, res) => {
         r = await pool.query(`SELECT t.*, u.name as user_name, u.email as user_email,
           (SELECT COUNT(*) FROM support_messages WHERE ticket_id=t.id) as msg_count,
           (SELECT message FROM support_messages WHERE ticket_id=t.id ORDER BY created_at DESC LIMIT 1) as last_msg
-          FROM support_tickets t JOIN users u ON t.user_id=u.id ORDER BY t.updated_at DESC`);
+          FROM support_tickets t LEFT JOIN users u ON t.user_id=u.id ORDER BY t.updated_at DESC`);
       } else {
         r = await pool.query(`SELECT t.*,
           (SELECT COUNT(*) FROM support_messages WHERE ticket_id=t.id) as msg_count,
@@ -386,12 +405,25 @@ const server = http.createServer(async (req, res) => {
     const body=await readBody(req); const id=makeId();
     sessions[id]={id,name:body.name||'Visitante',email:body.email||'',messages:[],open:true};
     sessions[id].messages.push({from:'admin',text:'Olá! Como posso te ajudar? 👋',time:nowTime()});
+    try {
+      const guestUser = await pool.query("SELECT id FROM users WHERE name=$1 LIMIT 1",[body.name||'Visitante']);
+      const userId = guestUser.rows.length ? guestUser.rows[0].id : null;
+      const t = await pool.query("INSERT INTO support_tickets (user_id,subject) VALUES($1,$2) RETURNING id",[userId,'Chat: '+id]);
+      sessions[id].db_ticket_id = t.rows[0].id;
+      await pool.query("INSERT INTO support_messages (ticket_id,sender_id,sender_type,message) VALUES($1,$2,'staff',$3)",[t.rows[0].id,null,'Olá! Como posso te ajudar? 👋']);
+    } catch(_){}
     notifyAdmin(); jsonRes(res,200,{id}); return;
   }
   if (urlPath==='/chat/send'&&req.method==='POST') {
     const body=await readBody(req); const s=sessions[body.id];
     if(!s){res.writeHead(404,CORS);res.end('{}');return;}
     s.messages.push({from:'visitor',text:body.text,time:nowTime()});
+    try {
+      if (s.db_ticket_id) {
+        await pool.query("INSERT INTO support_messages (ticket_id,sender_id,sender_type,message) VALUES($1,$2,'user',$3)",[s.db_ticket_id,null,body.text]);
+        await pool.query("UPDATE support_tickets SET updated_at=NOW() WHERE id=$1",[s.db_ticket_id]);
+      }
+    } catch(_){}
     while(s.visitorWaiting?.length){const r=s.visitorWaiting.shift();try{r.writeHead(200,{'Content-Type':'application/json',...CORS});r.end(JSON.stringify(s.messages));}catch(_){}}
     notifyAdmin(); jsonRes(res,200,{ok:true}); return;
   }
@@ -417,15 +449,139 @@ const server = http.createServer(async (req, res) => {
     const body=await readBody(req);const s=sessions[body.id];
     if(!s){res.writeHead(404,CORS);res.end('{}');return;}
     s.messages.push({from:'admin',text:body.text,time:nowTime()});
+    try {
+      if (s.db_ticket_id) {
+        await pool.query("INSERT INTO support_messages (ticket_id,sender_id,sender_type,message) VALUES($1,$2,'staff',$3)",[s.db_ticket_id,null,body.text]);
+        await pool.query("UPDATE support_tickets SET updated_at=NOW() WHERE id=$1",[s.db_ticket_id]);
+      }
+    } catch(_){}
     while(s.visitorWaiting?.length){const r=s.visitorWaiting.shift();try{r.writeHead(200,{'Content-Type':'application/json',...CORS});r.end(JSON.stringify(s.messages));}catch(_){}}
     notifyAdmin(); jsonRes(res,200,{ok:true}); return;
   }
   if (urlPath==='/chat/admin/close'&&req.method==='POST') {
     const body=await readBody(req);const s=sessions[body.id];
     if(s){s.open=false;s.messages.push({from:'admin',text:'Conversa encerrada. Obrigado! 👋',time:nowTime()});
+    try {
+      if (s.db_ticket_id) {
+        await pool.query("INSERT INTO support_messages (ticket_id,sender_id,sender_type,message) VALUES($1,$2,'staff',$3)",[s.db_ticket_id,null,'Conversa encerrada. Obrigado! 👋']);
+        await pool.query("UPDATE support_tickets SET status='closed',updated_at=NOW() WHERE id=$1",[s.db_ticket_id]);
+      }
+    } catch(_){}
     while(s.visitorWaiting?.length){const r=s.visitorWaiting.shift();try{r.writeHead(200,{'Content-Type':'application/json',...CORS});r.end(JSON.stringify(s.messages));}catch(_){}}
     notifyAdmin();}
     jsonRes(res,200,{ok:true}); return;
+  }
+
+  // ── CUPONS ────────────────────────────────────────────────────────────
+  if (urlPath==='/coupon/validate'&&req.method==='POST') {
+    const {code} = await readBody(req);
+    if (!code) return jsonRes(res,400,{error:'Informe o cupom.'});
+    try {
+      const r = await pool.query("SELECT * FROM coupons WHERE code=$1 AND active=true",[code.toUpperCase()]);
+      if (!r.rows.length) return jsonRes(res,404,{error:'Cupom não encontrado.'});
+      const c = r.rows[0];
+      if (c.valid_until && new Date(c.valid_until) < new Date()) return jsonRes(res,400,{error:'Cupom expirado.'});
+      if (c.max_uses > 0 && c.used_count >= c.max_uses) return jsonRes(res,400,{error:'Cupom atingiu o limite de uso.'});
+      jsonRes(res,200,{coupon:{code:c.code,discount_type:c.discount_type,discount_value:parseFloat(c.discount_value)}});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/coupon/list'&&req.method==='GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded||!await isAdmin(decoded)) return jsonRes(res,403,{error:'Apenas admin.'});
+    try {
+      const r = await pool.query("SELECT * FROM coupons ORDER BY created_at DESC");
+      jsonRes(res,200,{coupons:r.rows});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/coupon/create'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded||!await isAdmin(decoded)) return jsonRes(res,403,{error:'Apenas admin.'});
+    const {code,discount_type,discount_value,max_uses,valid_until} = await readBody(req);
+    if (!code||!discount_value) return jsonRes(res,400,{error:'Preencha código e valor.'});
+    try {
+      await pool.query("INSERT INTO coupons (code,discount_type,discount_value,max_uses,valid_until) VALUES($1,$2,$3,$4,$5)",
+        [code.toUpperCase(),discount_type||'percent',discount_value,max_uses||0,valid_until||null]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) {
+      if (e.code==='23505') return jsonRes(res,409,{error:'Cupom já existe.'});
+      jsonRes(res,500,{error:'Erro.'});
+    }
+    return;
+  }
+  if (urlPath==='/coupon/delete'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded||!await isAdmin(decoded)) return jsonRes(res,403,{error:'Apenas admin.'});
+    const {code} = await readBody(req);
+    try {
+      await pool.query("DELETE FROM coupons WHERE code=$1",[code.toUpperCase()]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/coupon/use'&&req.method==='POST') {
+    const {code} = await readBody(req);
+    if (!code) return jsonRes(res,400,{error:'Cupom obrigatório.'});
+    try {
+      await pool.query("UPDATE coupons SET used_count=used_count+1 WHERE code=$1",[code.toUpperCase()]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  // ── CARRINHO ─────────────────────────────────────────────────────────
+  if (urlPath==='/cart/add'&&req.method==='POST') {
+    const {session_id,product_name,product_price,quantity} = await readBody(req);
+    if (!session_id||!product_name) return jsonRes(res,400,{error:'Dados obrigatórios.'});
+    try {
+      const exist = await pool.query("SELECT * FROM cart_items WHERE session_id=$1 AND product_name=$2",[session_id,product_name]);
+      if (exist.rows.length) {
+        await pool.query("UPDATE cart_items SET quantity=quantity+$1 WHERE id=$2",[quantity||1,exist.rows[0].id]);
+      } else {
+        await pool.query("INSERT INTO cart_items (session_id,product_name,product_price,quantity) VALUES($1,$2,$3,$4)",
+          [session_id,product_name,product_price||'R$ 0,00',quantity||1]);
+      }
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/cart/items'&&req.method==='GET') {
+    const sid = new URL('http://x'+req.url).searchParams.get('session_id');
+    if (!sid) return jsonRes(res,400,{error:'session_id obrigatório.'});
+    try {
+      const r = await pool.query("SELECT * FROM cart_items WHERE session_id=$1 ORDER BY created_at ASC",[sid]);
+      jsonRes(res,200,{items:r.rows});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/cart/remove'&&req.method==='POST') {
+    const {id} = await readBody(req);
+    if (!id) return jsonRes(res,400,{error:'ID obrigatório.'});
+    try {
+      await pool.query("DELETE FROM cart_items WHERE id=$1",[id]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/cart/update'&&req.method==='POST') {
+    const {id,quantity} = await readBody(req);
+    if (!id||quantity===undefined) return jsonRes(res,400,{error:'Dados obrigatórios.'});
+    try {
+      if (quantity <= 0) await pool.query("DELETE FROM cart_items WHERE id=$1",[id]);
+      else await pool.query("UPDATE cart_items SET quantity=$1 WHERE id=$2",[quantity,id]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/cart/clear'&&req.method==='POST') {
+    const {session_id} = await readBody(req);
+    if (!session_id) return jsonRes(res,400,{error:'session_id obrigatório.'});
+    try {
+      await pool.query("DELETE FROM cart_items WHERE session_id=$1",[session_id]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
   }
 
   // ── ARQUIVOS ESTÁTICOS ────────────────────────────────────────────────

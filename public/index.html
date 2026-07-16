@@ -35,12 +35,11 @@
         <li><a href="#depoimentos" data-nav="depoimentos">Depoimentos</a></li>
         <li><a href="#contato" data-nav="contato">Contato</a></li>
       </ul>
-      <a href="#produtos" class="btn-nav">
-        <span>Ver Scripts</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
       <!-- AUTH BUTTON -->
       <div id="navAuthBtn" style="display:flex; align-items:center; gap:0.6rem;">
+        <button class="btn-nav-login" id="navCartBtn" onclick="openCart()" style="position:relative;cursor:pointer;">
+          🛒 <span id="cartCount" style="display:none;position:absolute;top:-6px;right:-8px;background:var(--blue);color:#fff;font-size:0.6rem;font-weight:800;padding:1px 5px;border-radius:10px;min-width:16px;text-align:center;">0</span>
+        </button>
         <a href="/suporte.html" class="btn-nav-login" id="navSupportBtn" style="display:none">Suporte</a>
         <a href="/auth.html" class="btn-nav-login" id="navLoginBtn">Entrar</a>
         <a href="/profile.html" class="btn-nav-user" id="navUserBtn" style="display:none">
@@ -174,7 +173,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>NUI</span></div>
           <div class="card-footer">
             <span class="price">R$ 49,90</span>
-            <button class="btn-comprar" onclick="openModal('HUD Personalizado', 'R$ 49,90')">Comprar</button>
+            <button class="btn-comprar" onclick="addToCart('Paineis Personalizados','R$ 49,90')">Comprar</button>
           </div>
         </div>
 
@@ -186,7 +185,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>SQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 39,90</span>
-            <button class="btn-comprar" onclick="openModal('Sistema de Garagem', 'R$ 39,90')">Comprar</button>
+            <button class="btn-comprar" onclick="addToCart('Sistema de Prisão','R$ 39,90')">Comprar</button>
           </div>
         </div>
 
@@ -198,7 +197,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>MySQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 59,90</span>
-            <button class="btn-comprar" onclick="openModal('Economy System', 'R$ 59,90')">Comprar</button>
+            <button class="btn-comprar" onclick="addToCart('Economy System','R$ 59,90')">Comprar</button>
           </div>
         </div>
 
@@ -210,7 +209,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>SQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 69,90</span>
-            <button class="btn-comprar" onclick="openModal('Sistema de Casas', 'R$ 69,90')">Comprar</button>
+            <button class="btn-comprar" onclick="addToCart('Sistema Peds','R$ 69,90')">Comprar</button>
           </div>
         </div>
 
@@ -222,7 +221,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>NUI</span></div>
           <div class="card-footer">
             <span class="price">R$ 44,90</span>
-            <button class="btn-comprar" onclick="openModal('Combat System', 'R$ 44,90')">Comprar</button>
+            <button class="btn-comprar" onclick="addToCart('Anti-cheater','R$ 44,90')">Comprar</button>
           </div>
         </div>
 
@@ -234,7 +233,7 @@
           <div class="card-tags"><span>FiveM</span><span>Lua</span><span>MySQL</span></div>
           <div class="card-footer">
             <span class="price">R$ 79,90</span>
-            <button class="btn-comprar" onclick="openModal('Job System', 'R$ 79,90')">Comprar</button>
+            <button class="btn-comprar" onclick="addToCart('Job System','R$ 79,90')">Comprar</button>
           </div>
         </div>
 
@@ -404,6 +403,33 @@
       <div class="modal-buttons">
         <a href="#" class="btn-primary" data-link="discord">💬 Discord</a>
         <a href="#" class="btn-secondary" data-link="whatsapp">📱 WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARRINHO OVERLAY -->
+  <div class="cart-overlay" id="cartOverlay" onclick="closeCart()">
+    <div class="cart-panel" onclick="event.stopPropagation()">
+      <div class="cart-header">
+        <h3>🛒 Carrinho</h3>
+        <button class="cart-close" onclick="closeCart()">✕</button>
+      </div>
+      <div class="cart-items" id="cartItems">
+        <div class="cart-empty">Seu carrinho está vazio.</div>
+      </div>
+      <div class="cart-footer" id="cartFooter" style="display:none;">
+        <div class="cart-coupon-row">
+          <input class="cart-coupon-input" id="cartCouponInput" placeholder="Cupom de desconto" />
+          <button class="cart-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+        </div>
+        <div class="cart-coupon-msg" id="cartCouponMsg"></div>
+        <div class="cart-discount" id="cartDiscount" style="display:none;"></div>
+        <div class="cart-total-row">
+          <span>Total</span>
+          <span id="cartTotal">R$ 0,00</span>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center;" onclick="checkoutCart()">Finalizar Compra</button>
+        <button class="cart-clear-btn" onclick="clearCart()">Limpar Carrinho</button>
       </div>
     </div>
   </div>
