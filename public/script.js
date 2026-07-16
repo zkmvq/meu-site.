@@ -531,6 +531,16 @@ function enviarMensagem(e) {
 // ==============================
 //   CARRINHO
 // ==============================
+function formatPrice(val) {
+  return 'R$ ' + val.toFixed(2).replace('.', ',');
+}
+
+function parsePrice(str) {
+  const m = str.match(/[\d.,]+/);
+  if (!m) return 0;
+  return parseFloat(m[0].replace('.', '').replace(',', '.'));
+}
+
 (function() {
   const CART_KEY = 'zk_cart';
   let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
@@ -547,16 +557,6 @@ function enviarMensagem(e) {
     const total = cart.reduce((s, i) => s + i.quantity, 0);
     if (total > 0) { badge.style.display = 'block'; badge.textContent = total; }
     else badge.style.display = 'none';
-  }
-
-  function parsePrice(str) {
-    const m = str.match(/[\d.,]+/);
-    if (!m) return 0;
-    return parseFloat(m[0].replace('.','').replace(',','.'));
-  }
-
-  function formatPrice(val) {
-    return 'R$ ' + val.toFixed(2).replace('.',',');
   }
 
   window.addToCart = function(name, price) {
@@ -709,7 +709,7 @@ async function loadPixConfig() {
 }
 loadPixConfig();
 
-function crc16(str) {
+function crc16PIX(str) {
   let crc = 0xFFFF;
   for (let i = 0; i < str.length; i++) {
     crc ^= str.charCodeAt(i) << 8;
@@ -722,7 +722,7 @@ function crc16(str) {
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
-function tlv(id, value) {
+function pixTlv(id, value) {
   const idStr = String(id).padStart(2, '0');
   const len = String(value.length).padStart(2, '0');
   return idStr + len + value;
@@ -731,29 +731,32 @@ function tlv(id, value) {
 function generatePixPayload(chave, nome, cidade, valor, txid) {
   txid = txid || '***';
   let payload = '';
-  payload += tlv(0, '01');
-  payload += tlv(1, '12');
-  payload += tlv(26, tlv(0, 'br.gov.bcb.pix') + tlv(1, chave) + tlv(2, nome));
-  payload += tlv(52, '0000');
-  payload += tlv(53, '986');
-  if (valor) payload += tlv(54, valor.toFixed(2));
-  payload += tlv(58, 'BR');
-  payload += tlv(59, nome.substring(0, 25));
-  payload += tlv(60, cidade.substring(0, 15));
-  payload += tlv(62, tlv(5, txid));
-  const crcValue = crc16(payload + '6304');
-  payload += '6304' + crcValue;
+
+  // 00 - Formato
+  payload += pixTlv(0, '01');
+  // 01 - Iniciação
+  payload += pixTlv(1, '12');
+  // 26 - Info da conta (template 26)
+  payload += pixTlv(26, pixTlv(0, 'br.gov.bcb.pix') + pixTlv(1, chave) + pixTlv(2, nome));
+  // 52 - Código categoria
+  payload += pixTlv(52, '0000');
+  // 53 - Moeda
+  payload += pixTlv(53, '986');
+  // 54 - Valor
+  payload += pixTlv(54, valor.toFixed(2));
+  // 58 - País
+  payload += pixTlv(58, 'BR');
+  // 59 - Nome
+  payload += pixTlv(59, nome.substring(0, 25));
+  // 60 - Cidade
+  payload += pixTlv(60, cidade.substring(0, 15));
+  // 62 - Dados adicionais (template 62)
+  payload += pixTlv(62, pixTlv(5, txid));
+  // 63 - CRC (placeholder)
+  payload += '6304';
+  const crc = crc16PIX(payload);
+  payload += crc;
   return payload;
-}
-
-function formatPrice(val) {
-  return 'R$ ' + val.toFixed(2).replace('.', ',');
-}
-
-function parsePrice(str) {
-  const m = str.match(/[\d.,]+/);
-  if (!m) return 0;
-  return parseFloat(m[0].replace('.', '').replace(',', '.'));
 }
 
 async function generatePix() {
@@ -768,7 +771,6 @@ async function generatePix() {
 
   let total = cart.reduce((s, i) => s + parsePrice(i.price) * i.quantity, 0);
 
-  // Aplica cupom se tiver
   const appliedCoupon = window._appliedCoupon;
   if (appliedCoupon) {
     if (appliedCoupon.discount_type === 'percent') total = total * (1 - appliedCoupon.discount_value / 100);
@@ -803,19 +805,14 @@ async function generatePix() {
   const qrContainer = document.getElementById('qrCodeContainer');
   qrContainer.innerHTML = '';
   try {
-    if (typeof QRCode === 'object' && QRCode.toCanvas) {
-      const canvas = document.createElement('canvas');
-      qrContainer.appendChild(canvas);
-      QRCode.toCanvas(canvas, payload, {
-        width: 220,
-        margin: 2,
-        color: { dark: '#F1F5FF', light: '#081230' }
-      });
-    } else if (typeof QRCode === 'function') {
-      const div = document.createElement('div');
-      qrContainer.appendChild(div);
-      new QRCode(div, { text: payload, width: 220, height: 220, colorDark: '#F1F5FF', colorLight: '#081230' });
-    }
+    new QRCode(qrContainer, {
+      text: payload,
+      width: 220,
+      height: 220,
+      colorDark: '#F1F5FF',
+      colorLight: '#081230',
+      correctLevel: QRCode.CorrectLevel.M
+    });
   } catch(e) {
     qrContainer.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;">Copie o código PIX abaixo</p>';
   }

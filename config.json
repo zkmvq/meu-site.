@@ -3,6 +3,11 @@
     "nome": "ZK Studio",
     "descricao": "Scripts premium para elevar seu servidor FiveM."
   },
+  "discord": {
+    "client_id": "SEU_CLIENT_ID",
+    "client_secret": "SEU_CLIENT_SECRET",
+    "redirect_uri": "https://seu-site.up.railway.app/auth/discord/callback"
+  },
   "contato": {
     "discord": "https://discord.gg/9BFJTzExWK",
     "email": "contato@zkstudio.com",

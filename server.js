@@ -100,6 +100,7 @@ async function initDB() {
   // Migração segura
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_staff BOOLEAN DEFAULT FALSE`).catch(()=>{});
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_id VARCHAR(50) UNIQUE`).catch(()=>{});
   // Garante que o dono está na tabela de staff
   await pool.query(`INSERT INTO staff_emails (email, label) VALUES ($1, 'Dono - ZK Studio') ON CONFLICT (email) DO NOTHING`, [OWNER_EMAIL]);
   // Marca o dono como admin/staff se já estiver cadastrado
@@ -213,7 +214,7 @@ const server = http.createServer(async (req, res) => {
     const decoded = verifyToken(getToken(req));
     if (!decoded) return jsonRes(res,401,{error:'Não autorizado.'});
     try {
-      const u = await pool.query('SELECT id,name,email,avatar,is_admin,is_staff,created_at FROM users WHERE id=$1',[decoded.id]);
+      const u = await pool.query('SELECT id,name,email,discord_id,avatar,is_admin,is_staff,created_at FROM users WHERE id=$1',[decoded.id]);
       if (!u.rows.length) return jsonRes(res,404,{error:'Usuário não encontrado.'});
       const p = await pool.query('SELECT * FROM purchases WHERE user_id=$1 ORDER BY purchased_at DESC',[decoded.id]);
       jsonRes(res,200,{user:u.rows[0],purchases:p.rows});
@@ -239,7 +240,7 @@ const server = http.createServer(async (req, res) => {
     const decoded = verifyToken(getToken(req));
     if (!decoded||!await isStaff(decoded)) return jsonRes(res,403,{error:'Sem permissão.'});
     try {
-      const users = await pool.query('SELECT id,name,email,avatar,is_admin,is_staff,provider,created_at FROM users ORDER BY created_at DESC');
+      const users = await pool.query('SELECT id,name,email,discord_id,avatar,is_admin,is_staff,provider,created_at FROM users ORDER BY created_at DESC');
       const purch = await pool.query('SELECT user_id,COUNT(*) as total FROM purchases GROUP BY user_id');
       const pm = {}; purch.rows.forEach(p=>pm[p.user_id]=parseInt(p.total));
       jsonRes(res,200,{users:users.rows.map(u=>({...u,purchase_count:pm[u.id]||0}))});
@@ -623,6 +624,65 @@ const server = http.createServer(async (req, res) => {
       await pool.query("UPDATE orders SET status=$1 WHERE id=$2",[status,order_id]);
       jsonRes(res,200,{ok:true});
     } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  // ── DISCORD OAUTH ────────────────────────────────────────────────────
+  if (urlPath==='/auth/discord'&&req.method==='GET') {
+    let cfg;
+    try { cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8')); } catch { cfg = {}; }
+    const dc = cfg.discord || {};
+    if (!dc.client_id) { res.writeHead(302,{'Location':'/auth.html?error=discord_not_configured'}); res.end(); return; }
+    const redirectUri = dc.redirect_uri || (req.headers.origin || '') + '/auth/discord/callback';
+    const discordUrl = 'https://discord.com/api/oauth2/authorize?client_id='+encodeURIComponent(dc.client_id)+'&redirect_uri='+encodeURIComponent(redirectUri)+'&response_type=code&scope=identify%20email';
+    res.writeHead(302,{'Location':discordUrl}); res.end(); return;
+  }
+  if (urlPath==='/auth/discord/callback'&&req.method==='GET') {
+    const urlParams = new URL('http://x'+req.url).searchParams;
+    const code = urlParams.get('code');
+    if (!code) { res.writeHead(302,{'Location':'/auth.html?error=no_code'}); res.end(); return; }
+    let cfg;
+    try { cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8')); } catch { cfg = {}; }
+    const dc = cfg.discord || {};
+    const redirectUri = dc.redirect_uri || (req.headers.origin || '') + '/auth/discord/callback';
+    try {
+      const tokenRes = await fetch('https://discord.com/api/oauth2/token',{
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({client_id:dc.client_id,client_secret:dc.client_secret,grant_type:'authorization_code',code,redirect_uri:redirectUri}).toString()
+      });
+      const tokenData = await tokenRes.json();
+      if (!tokenData.access_token) { res.writeHead(302,{'Location':'/auth.html?error=token_failed'}); res.end(); return; }
+      const userRes = await fetch('https://discord.com/api/users/@me',{headers:{'Authorization':'Bearer '+tokenData.access_token}});
+      const dUser = await userRes.json();
+      if (!dUser.id) { res.writeHead(302,{'Location':'/auth.html?error=user_failed'}); res.end(); return; }
+      const discordId = dUser.id;
+      const discordName = dUser.username;
+      const discordAvatar = dUser.avatar ? 'https://cdn.discordapp.com/avatars/'+discordId+'/'+dUser.avatar+'.png' : null;
+      const discordEmail = dUser.email || null;
+      // Procura ou cria usuário
+      let user = null;
+      const existing = await pool.query("SELECT * FROM users WHERE discord_id=$1",[discordId]);
+      if (existing.rows.length) {
+        user = existing.rows[0];
+        await pool.query("UPDATE users SET name=$1,avatar=$2 WHERE id=$3",[discordName,discordAvatar,user.id]);
+      } else {
+        const emailToUse = discordEmail || (discordId+'@discord.local');
+        const emailExists = await pool.query("SELECT * FROM users WHERE email=$1",[emailToUse.toLowerCase()]);
+        if (emailExists.rows.length) {
+          user = emailExists.rows[0];
+          await pool.query("UPDATE users SET discord_id=$1,name=$2,avatar=$3,provider='discord' WHERE id=$4",[discordId,discordName,discordAvatar,user.id]);
+        } else {
+          const r = await pool.query("INSERT INTO users (name,email,discord_id,avatar,provider) VALUES($1,$2,$3,$4,'discord') RETURNING *",[discordName,emailToUse.toLowerCase(),discordId,discordAvatar]);
+          user = r.rows[0];
+        }
+      }
+      const jwtToken = jwt.sign({id:user.id,email:user.email},JWT_SECRET,{expiresIn:'30d'});
+      const userData = encodeURIComponent(JSON.stringify({id:user.id,name:user.name,email:user.email,avatar:user.avatar||discordAvatar}));
+      res.writeHead(302,{'Location':'/?discord_token='+jwtToken+'&discord_user='+userData}); res.end();
+    } catch(e) {
+      console.error('Discord OAuth error:',e);
+      res.writeHead(302,{'Location':'/auth.html?error=oauth_failed'}); res.end();
+    }
     return;
   }
 

@@ -282,6 +282,7 @@ function renderUsersTable(users, full) {
     <thead><tr>
       <th>Usuário</th>
       <th>Email</th>
+      <th>Discord ID</th>
       <th>Método</th>
       <th>Compras</th>
       <th>Cadastro</th>
@@ -294,6 +295,7 @@ function renderUsersTable(users, full) {
         <span class="td-name">${esc(u.name)}</span>
       </div></td>
       <td class="td-mono">${esc(u.email)}</td>
+      <td class="td-mono">${u.discord_id ? esc(u.discord_id) : '<span style="color:var(--text-muted);">—</span>'}</td>
       <td><span class="badge ${u.provider==='discord'?'badge-blue':'badge-green'}">${u.provider==='discord'?'Discord':'Email'}</span></td>
       <td><span class="badge badge-blue">${u.purchase_count || 0}</span></td>
       <td class="td-mono">${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
