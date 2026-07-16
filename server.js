@@ -669,6 +669,7 @@ const server = http.createServer(async (req, res) => {
         headers: { Authorization: 'Bot ' + botToken }
       });
       const guilds = await guildsRes.json();
+      console.log('[TICKET] Servidores do bot:', JSON.stringify(guilds.map(g=>({id:g.id,name:g.name}))));
       if (!guilds.length) return jsonRes(res,500,{error:'Bot não está em nenhum servidor.'});
       const guildId = guilds[0].id;
 
