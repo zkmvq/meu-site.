@@ -281,7 +281,7 @@ function renderUsersTable(users, full) {
   return `<table>
     <thead><tr>
       <th>Usuário</th>
-      <th>Discord ID</th>
+      <th>Email</th>
       <th>Método</th>
       <th>Compras</th>
       <th>Cadastro</th>
@@ -293,7 +293,7 @@ function renderUsersTable(users, full) {
         ${u.avatar ? `<img class="td-avatar-img" src="${u.avatar}" />` : `<div class="td-avatar-img" style="background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;">${u.name.charAt(0).toUpperCase()}</div>`}
         <span class="td-name">${esc(u.name)}</span>
       </div></td>
-      <td><span class="td-mono">${u.discord_id || '-'}</span></td>
+      <td class="td-mono">${esc(u.email)}</td>
       <td><span class="badge ${u.provider==='discord'?'badge-blue':'badge-green'}">${u.provider==='discord'?'Discord':'Email'}</span></td>
       <td><span class="badge badge-blue">${u.purchase_count || 0}</span></td>
       <td class="td-mono">${new Date(u.created_at).toLocaleDateString('pt-BR')}</td>
