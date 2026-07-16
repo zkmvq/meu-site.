@@ -14,6 +14,7 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const { Pool } = require('pg');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require('discord.js');
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'zkstudio_secret_2025';
 const DB_URL       = process.env.DATABASE_URL || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
@@ -23,6 +24,85 @@ const pool = new Pool({
   connectionString: DB_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
+
+// ── DISCORD BOT ──────────────────────────────────────────────────────
+let discordClient = null;
+let botReady = false;
+
+function startBot() {
+  const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
+  const token = process.env.BOT_TOKEN || cfg.discord?.bot_token;
+  if (!token || token.startsWith('USAR_')) { console.log('[BOT] Token não configurado, pulando...'); return; }
+
+  const client = new Client({
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
+  });
+
+  client.once('ready', () => {
+    console.log('[BOT] Logado como ' + client.user.tag);
+    botReady = true;
+  });
+
+  discordClient = client;
+
+  client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
+    const { customId, channel, member, user } = interaction;
+
+    const cfg2 = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
+    const guildId = cfg2.discord?.ticket_guild_id;
+
+    // Verifica se é staff
+    let isStaffUser = false;
+    try {
+      const r = await pool.query("SELECT * FROM staff_emails WHERE email=(SELECT email FROM users WHERE discord_id=$1) OR discord_id=$1", [user.id]);
+      if (r.rows.length > 0) isStaffUser = true;
+    } catch(_){}
+    try {
+      const ownerCheck = await pool.query("SELECT email FROM users WHERE discord_id=$1", [user.id]);
+      if (ownerCheck.rows.length > 0 && ownerCheck.rows[0].email === OWNER_EMAIL) isStaffUser = true;
+    } catch(_){}
+
+    if (customId === 'ticket_claim') {
+      if (!isStaffUser) return interaction.reply({ content: 'Apenas staff pode assumir tickets.', ephemeral: true });
+      const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+      const fields = embed.data.fields || [];
+      const existing = fields.find(f => f.name === '👤 Assumido por');
+      if (existing) {
+        existing.value = '<@' + user.id + '>';
+      } else {
+        embed.addFields({ name: '👤 Assumido por', value: '<@' + user.id + '>', inline: true });
+      }
+      await interaction.update({ embeds: [embed] });
+      await channel.send({ content: '<@' + user.id + '> assumiu este ticket.' });
+    }
+
+    if (customId === 'ticket_notify') {
+      if (!isStaffUser) return interaction.reply({ content: 'Apenas staff pode notificar membros.', ephemeral: true });
+      const topic = channel.topic || '';
+      const parts = topic.split('|');
+      const buyerName = parts[1]?.trim() || 'Comprador';
+      await channel.send({ content: '**🔔 Notificação:** <@' + user.id + '> está aguardando resposta do comprador (' + buyerName + '). Por favor, responda o ticket.' });
+      await interaction.reply({ content: 'Membro notificado!', ephemeral: true });
+    }
+
+    if (customId === 'ticket_close') {
+      if (!isStaffUser) return interaction.reply({ content: 'Apenas staff pode fechar tickets.', ephemeral: true });
+      const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+      embed.setColor(0xEF4444);
+      embed.addFields({ name: '🔒 Status', value: 'Fechado por <@' + user.id + '>', inline: false });
+      await interaction.update({ embeds: [embed], components: [] });
+      await channel.send({ content: '🔒 Ticket fechado por <@' + user.id + '>. Este canal será deletado em 10 segundos.' });
+      setTimeout(async () => {
+        try { await channel.delete(); } catch(_){}
+      }, 10000);
+    }
+  });
+
+  client.login(token).catch(e => console.log('[BOT] Erro ao logar:', e.message));
+}
+
+startBot();
 
 async function initDB() {
   await pool.query(`
@@ -690,26 +770,58 @@ const server = http.createServer(async (req, res) => {
       console.log('[TICKET] Resposta:', JSON.stringify(channel));
       if (channel.code) return jsonRes(res,500,{error:'Erro ao criar canal: '+channel.message+' ('+channel.code+') '+JSON.stringify(channel.errors||'')});
 
-      // Envia mensagem de boas-vindas no canal
-      const embed = {
-        embeds: [{
-          title: '🛒 Nova Compra',
-          color: 0x1A56DB,
-          fields: [
-            { name: 'Script', value: script_name, inline: true },
-            { name: 'Preço', value: price, inline: true },
-            { name: 'Comprador', value: user_name||'Anônimo', inline: true },
-            { name: 'Email', value: user_email||'Não informado', inline: true }
-          ],
-          footer: { text: 'ZK Studio — Sistema de Tickets' },
-          timestamp: new Date().toISOString()
-        }]
-      };
-      await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
-        method: 'POST',
-        headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify(embed)
-      });
+      // Envia embed com botões
+      if (botReady && discordClient) {
+        const guild = discordClient.guilds.cache.get(guildId);
+        const ch = guild ? guild.channels.cache.get(channel.id) : null;
+        if (ch) {
+          const ticketEmbed = new EmbedBuilder()
+            .setTitle('🛒 Nova Compra')
+            .setColor(0x1A56DB)
+            .addFields(
+              { name: '📦 Script', value: '```' + script_name + '```', inline: true },
+              { name: '💰 Preço', value: '```' + price + '```', inline: true },
+              { name: 'Status', value: '🔴 Aguardando atendimento', inline: true },
+              { name: '\u200b', value: '\u200b', inline: true },
+              { name: '👤 Comprador', value: '```' + (user_name||'Anônimo') + '```', inline: true },
+              { name: '📧 Email', value: '```' + (user_email||'Não informado') + '```', inline: true },
+              { name: '\u200b', value: '\u200b', inline: true },
+              { name: '🕐 Criado em', value: '<t:' + Math.floor(Date.now()/1000) + ':R>', inline: false }
+            )
+            .setFooter({ text: 'ZK Studio — Sistema de Tickets', iconURL: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' })
+            .setTimestamp();
+
+          const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('ticket_claim').setLabel('Assumir').setEmoji('👋').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId('ticket_notify').setLabel('Notificar Membro').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('ticket_close').setLabel('Fechar Ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger)
+          );
+
+          await ch.send({ embeds: [ticketEmbed], components: [row] });
+          await ch.send({ content: '**👋 Olá!** Bem-vindo ao suporte da **ZK Studio**.\nUm membro da equipe irá atendê-lo em breve.\n\nPor favor, descreva sua dúvida ou necessidade abaixo.' });
+        }
+      } else {
+        // Fallback REST API (sem botões)
+        const embedBody = JSON.stringify({
+          embeds: [{
+            title: '🛒 Nova Compra',
+            color: 0x1A56DB,
+            fields: [
+              { name: 'Script', value: script_name, inline: true },
+              { name: 'Preço', value: price, inline: true },
+              { name: 'Comprador', value: user_name||'Anônimo', inline: true },
+              { name: 'Email', value: user_email||'Não informado', inline: true }
+            ],
+            footer: { text: 'ZK Studio — Sistema de Tickets' },
+            timestamp: new Date().toISOString()
+          }]
+        });
+        await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
+          method: 'POST',
+          headers: { Authorization: 'Bot ' + botToken, 'Content-Type': 'application/json' },
+          body: embedBody
+        });
+      }
 
       // Salva pedido no banco
       try {

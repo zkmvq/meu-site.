@@ -8,14 +8,19 @@
     "build": "echo 'No build step'"
   },
   "dependencies": {
-    "pg": "^8.11.3",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2"
+    "discord.js": "^14.27.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["zkstudio", "fivem", "scripts"],
+  "keywords": [
+    "zkstudio",
+    "fivem",
+    "scripts"
+  ],
   "author": "ZK Studio",
   "license": "ISC"
 }
