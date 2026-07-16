@@ -220,17 +220,6 @@ document.querySelectorAll('.produto-card,.dep-card,.contato-item,.feature-card')
   fadeObs.observe(el);
 });
 
-// ── MODAL ─────────────────────────────────────────────────────────────
-function openModal(name, price) {
-  document.getElementById('modalTitle').textContent = name;
-  document.getElementById('modalPrice').textContent = price;
-  document.getElementById('modalOverlay').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('active');
-  document.body.style.overflow = '';
-}
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
 // ── TOAST ─────────────────────────────────────────────────────────────
@@ -606,6 +595,7 @@ function enviarMensagem(e) {
   window.clearCart = function() {
     cart = [];
     appliedCoupon = null;
+    window._appliedCoupon = null;
     saveCart();
     renderCart();
   };
@@ -620,8 +610,9 @@ function enviarMensagem(e) {
         body: JSON.stringify({ code })
       });
       const d = await r.json();
-      if (!r.ok) { msg.className = 'cart-coupon-msg error'; msg.textContent = d.error || 'Cupom inválido.'; appliedCoupon = null; return; }
+      if (!r.ok) { msg.className = 'cart-coupon-msg error'; msg.textContent = d.error || 'Cupom inválido.'; appliedCoupon = null; window._appliedCoupon = null; return; }
       appliedCoupon = d.coupon;
+      window._appliedCoupon = d.coupon;
       msg.className = 'cart-coupon-msg success';
       msg.textContent = '✅ Cupom aplicado! (' + (d.coupon.discount_type === 'percent' ? d.coupon.discount_value + '%' : formatPrice(d.coupon.discount_value)) + ' de desconto)';
       renderCart();
@@ -633,7 +624,11 @@ function enviarMensagem(e) {
   window.checkoutCart = function() {
     if (!cart.length) return;
     const total = calcTotal();
-    openModal('Carrinho — ' + cart.length + ' item(s)', formatPrice(total));
+    document.getElementById('checkoutTotal').textContent = formatPrice(total) + ' (' + cart.length + ' item' + (cart.length > 1 ? 's' : '') + ')';
+    document.getElementById('checkoutStep1').style.display = 'block';
+    document.getElementById('checkoutStep2').style.display = 'none';
+    document.getElementById('modalOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
   };
 
   function calcTotal() {
@@ -700,3 +695,150 @@ function enviarMensagem(e) {
   updateCartBadge();
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCart(); });
 })();
+
+// ==============================
+//   PIX / QR CODE CHECKOUT
+// ==============================
+let pixConfig = null;
+
+async function loadPixConfig() {
+  try {
+    const cfg = await fetch('/config.json').then(r => r.json());
+    pixConfig = cfg.pix || null;
+  } catch(e) {}
+}
+loadPixConfig();
+
+function crc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+      else crc <<= 1;
+      crc &= 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function tlv(id, value) {
+  const idStr = String(id).padStart(2, '0');
+  const len = String(value.length).padStart(2, '0');
+  return idStr + len + value;
+}
+
+function generatePixPayload(chave, nome, cidade, valor, txid) {
+  txid = txid || '***';
+  let payload = '';
+  payload += tlv(0, '01');
+  payload += tlv(1, '12');
+  payload += tlv(26, tlv(0, 'br.gov.bcb.pix') + tlv(1, chave) + tlv(2, nome));
+  payload += tlv(52, '0000');
+  payload += tlv(53, '986');
+  if (valor) payload += tlv(54, valor.toFixed(2));
+  payload += tlv(58, 'BR');
+  payload += tlv(59, nome.substring(0, 25));
+  payload += tlv(60, cidade.substring(0, 15));
+  payload += tlv(62, tlv(5, txid));
+  const crcValue = crc16(payload + '6304');
+  payload += '6304' + crcValue;
+  return payload;
+}
+
+function formatPrice(val) {
+  return 'R$ ' + val.toFixed(2).replace('.', ',');
+}
+
+function parsePrice(str) {
+  const m = str.match(/[\d.,]+/);
+  if (!m) return 0;
+  return parseFloat(m[0].replace('.', '').replace(',', '.'));
+}
+
+async function generatePix() {
+  const name = document.getElementById('checkoutName').value.trim();
+  const email = document.getElementById('checkoutEmail').value.trim();
+  const doc = document.getElementById('checkoutDoc').value.trim();
+  if (!name) { alert('Informe seu nome.'); return; }
+  if (!pixConfig || !pixConfig.chave) { alert('Chave PIX não configurada.'); return; }
+
+  const cart = JSON.parse(localStorage.getItem('zk_cart') || '[]');
+  if (!cart.length) { alert('Carrinho vazio.'); return; }
+
+  let total = cart.reduce((s, i) => s + parsePrice(i.price) * i.quantity, 0);
+
+  // Aplica cupom se tiver
+  const appliedCoupon = window._appliedCoupon;
+  if (appliedCoupon) {
+    if (appliedCoupon.discount_type === 'percent') total = total * (1 - appliedCoupon.discount_value / 100);
+    else total = total - appliedCoupon.discount_value;
+    if (total < 0) total = 0;
+  }
+
+  const txid = 'ZK' + Date.now().toString(36).toUpperCase();
+  const payload = generatePixPayload(pixConfig.chave, pixConfig.nome, pixConfig.cidade, total, txid);
+
+  // Salva pedido no banco
+  try {
+    await fetch('/order/create', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        buyer_name: name,
+        buyer_email: email,
+        buyer_doc: doc,
+        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.quantity })),
+        total: formatPrice(total)
+      })
+    });
+  } catch(e) {}
+
+  // Mostra step 2
+  document.getElementById('checkoutStep1').style.display = 'none';
+  document.getElementById('checkoutStep2').style.display = 'block';
+  document.getElementById('pixAmount').textContent = formatPrice(total);
+  document.getElementById('pixCopyCode').textContent = payload;
+
+  // Gera QR Code
+  const qrContainer = document.getElementById('qrCodeContainer');
+  qrContainer.innerHTML = '';
+  try {
+    if (typeof QRCode === 'object' && QRCode.toCanvas) {
+      const canvas = document.createElement('canvas');
+      qrContainer.appendChild(canvas);
+      QRCode.toCanvas(canvas, payload, {
+        width: 220,
+        margin: 2,
+        color: { dark: '#F1F5FF', light: '#081230' }
+      });
+    } else if (typeof QRCode === 'function') {
+      const div = document.createElement('div');
+      qrContainer.appendChild(div);
+      new QRCode(div, { text: payload, width: 220, height: 220, colorDark: '#F1F5FF', colorLight: '#081230' });
+    }
+  } catch(e) {
+    qrContainer.innerHTML = '<p style="color:var(--text-muted);font-size:0.8rem;">Copie o código PIX abaixo</p>';
+  }
+}
+
+function copyPixCode() {
+  const code = document.getElementById('pixCopyCode').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const el = document.getElementById('pixCopyCode');
+    const orig = el.style.color;
+    el.style.color = '#22C55E';
+    el.textContent = '✅ Código copiado!';
+    setTimeout(() => { el.style.color = orig; el.textContent = code; }, 2000);
+  }).catch(() => {
+    const range = document.createRange();
+    range.selectNode(document.getElementById('pixCopyCode'));
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+  });
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}

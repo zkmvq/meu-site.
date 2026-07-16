@@ -86,6 +86,16 @@ async function initDB() {
       quantity INTEGER DEFAULT 1,
       created_at TIMESTAMP DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS orders (
+      id SERIAL PRIMARY KEY,
+      buyer_name VARCHAR(200) NOT NULL,
+      buyer_email VARCHAR(200),
+      buyer_doc VARCHAR(30),
+      items JSONB NOT NULL,
+      total VARCHAR(20) NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
   // Migração segura
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`).catch(()=>{});
@@ -579,6 +589,38 @@ const server = http.createServer(async (req, res) => {
     if (!session_id) return jsonRes(res,400,{error:'session_id obrigatório.'});
     try {
       await pool.query("DELETE FROM cart_items WHERE session_id=$1",[session_id]);
+      jsonRes(res,200,{ok:true});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+
+  // ── PEDIDOS ──────────────────────────────────────────────────────────
+  if (urlPath==='/order/create'&&req.method==='POST') {
+    const {buyer_name,buyer_email,buyer_doc,items,total} = await readBody(req);
+    if (!buyer_name||!items||!total) return jsonRes(res,400,{error:'Dados obrigatórios.'});
+    try {
+      const r = await pool.query("INSERT INTO orders (buyer_name,buyer_email,buyer_doc,items,total) VALUES($1,$2,$3,$4,$5) RETURNING id,created_at",
+        [buyer_name,buyer_email||null,buyer_doc||null,JSON.stringify(items),total]);
+      jsonRes(res,200,{order:r.rows[0]});
+    } catch(e) { jsonRes(res,500,{error:'Erro ao criar pedido.'}); }
+    return;
+  }
+  if (urlPath==='/order/list'&&req.method==='GET') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded||!await isStaff(decoded)) return jsonRes(res,403,{error:'Apenas staff.'});
+    try {
+      const r = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
+      jsonRes(res,200,{orders:r.rows});
+    } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
+    return;
+  }
+  if (urlPath==='/order/update-status'&&req.method==='POST') {
+    const decoded = verifyToken(getToken(req));
+    if (!decoded||!await isStaff(decoded)) return jsonRes(res,403,{error:'Apenas staff.'});
+    const {order_id,status} = await readBody(req);
+    if (!order_id||!status) return jsonRes(res,400,{error:'Dados obrigatórios.'});
+    try {
+      await pool.query("UPDATE orders SET status=$1 WHERE id=$2",[status,order_id]);
       jsonRes(res,200,{ok:true});
     } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
     return;

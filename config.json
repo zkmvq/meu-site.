@@ -10,6 +10,11 @@
     "whatsapp": "https://wa.me/5500000000000",
     "youtube": "https://youtube.com/@zkstudio"
   },
+  "pix": {
+    "chave": "24981271892",
+    "nome": "ZK Studio",
+    "cidade": "Sao Paulo"
+  },
   "rodape": {
     "copyright": "© 2025 ZK Studio. Todos os direitos reservados."
   }

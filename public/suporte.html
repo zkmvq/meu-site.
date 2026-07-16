@@ -139,6 +139,9 @@
     <div class="sidebar-item" id="sidebarCupons" onclick="showPage('cupons')" data-page="cupons" style="display:none">
       <span class="si-icon">🏷️</span> Cupons
     </div>
+    <div class="sidebar-item" id="sidebarPedidos" onclick="showPage('pedidos')" data-page="pedidos">
+      <span class="si-icon">📦</span> Pedidos
+    </div>
     <div class="sidebar-item" onclick="window.location.href='/staff.html'">
       <span class="si-icon">⚙️</span> Painel Admin
     </div>
@@ -241,6 +244,12 @@
       </div>
       <div class="table-wrap" id="couponTable"><div class="loading">Carregando...</div></div>
     </div>
+
+    <!-- PEDIDOS -->
+    <div class="page" id="page-pedidos">
+      <div class="page-title"><span class="pt-icon">📦</span> Pedidos</div>
+      <div class="table-wrap" id="ordersTable"><div class="loading">Carregando...</div></div>
+    </div>
   </div>
 </div>
 
@@ -291,6 +300,7 @@ function showPage(name) {
   document.querySelector('[data-page="'+name+'"]')?.classList.add('active');
   if (name === 'staff') loadStaff();
   if (name === 'cupons') loadCoupons();
+  if (name === 'pedidos') loadOrders();
 }
 
 // ── TICKETS ──────────────────────────────────────────────────────────
@@ -792,6 +802,51 @@ async function deleteCoupon(code) {
   });
   if (r.ok) loadCoupons();
   else alert('Erro ao deletar.');
+}
+
+// ── PEDIDOS ──────────────────────────────────────────────────────────────
+async function loadOrders() {
+  document.getElementById('ordersTable').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const r = await fetch('/order/list', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    const list = d.orders || [];
+    if (!list.length) {
+      document.getElementById('ordersTable').innerHTML = '<div class="loading">Nenhum pedido realizado.</div>';
+      return;
+    }
+    document.getElementById('ordersTable').innerHTML = '<table><thead><tr><th>#</th><th>Comprador</th><th>Email</th><th>Doc</th><th>Itens</th><th>Total</th><th>Status</th><th>Data</th><th>Ação</th></tr></thead><tbody>'+
+      list.map(o => {
+        const items = (o.items||[]).map(i=>i.name+' x'+i.qty).join(', ');
+        const statusColors = { pending:'badge-yellow', paid:'badge-green', cancelled:'badge-red' };
+        const statusLabels = { pending:'Pendente', paid:'Pago', cancelled:'Cancelado' };
+        const statusClass = statusColors[o.status]||'badge-yellow';
+        const statusLabel = statusLabels[o.status]||o.status;
+        return '<tr>'+
+          '<td class="td-mono">#'+o.id+'</td>'+
+          '<td class="td-name">'+esc(o.buyer_name)+'</td>'+
+          '<td class="td-mono">'+esc(o.buyer_email||'-')+'</td>'+
+          '<td class="td-mono">'+esc(o.buyer_doc||'-')+'</td>'+
+          '<td style="font-size:0.75rem;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(items)+'">'+esc(items)+'</td>'+
+          '<td class="td-mono" style="color:var(--blue-bright);font-weight:700;">'+esc(o.total)+'</td>'+
+          '<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'+
+          '<td class="td-mono">'+new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</td>'+
+          '<td>'+
+            (o.status==='pending'?'<button class="btn-primary btn-sm" onclick="updateOrderStatus('+o.id+',\'paid\')" style="font-size:0.68rem;">✔ Pago</button>':'')+
+            (o.status!=='cancelled'?'<button class="btn-danger btn-sm" onclick="updateOrderStatus('+o.id+',\'cancelled\')" style="font-size:0.68rem;margin-left:0.3rem;">✕</button>':'')+
+          '</td>'+
+        '</tr>';
+      }).join('')+
+    '</tbody></table>';
+  } catch(e) { document.getElementById('ordersTable').innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+}
+
+async function updateOrderStatus(id, status) {
+  const r = await fetch('/order/update-status', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ order_id: id, status })
+  });
+  if (r.ok) loadOrders();
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
