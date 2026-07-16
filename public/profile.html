@@ -254,6 +254,7 @@
   </style>
 </head>
 <body>
+  <div id="cursor-dot"></div>
   <div class="bg-glow bg-glow-1"></div>
   <div class="bg-glow bg-glow-2"></div>
   <div class="bg-glow bg-glow-3"></div>
@@ -395,6 +396,16 @@
   }
 
   loadProfile();
+
+  const dot = document.getElementById('cursor-dot');
+  if (dot) {
+    document.addEventListener('mousemove', e => {
+      dot.style.left = e.clientX + 'px';
+      dot.style.top  = e.clientY + 'px';
+    });
+    document.addEventListener('mouseleave', () => { dot.style.opacity = '0'; });
+    document.addEventListener('mouseenter', () => { dot.style.opacity = '1'; });
+  }
 </script>
 </body>
 </html>
