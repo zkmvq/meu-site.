@@ -26,8 +26,8 @@
     dot.style.top  = my + 'px';
   });
   (function loop() {
-    rx += (mx - rx) * 0.18;
-    ry += (my - ry) * 0.18;
+    rx += (mx - rx) * 0.35;
+    ry += (my - ry) * 0.35;
     ring.style.left = rx + 'px';
     ring.style.top  = ry + 'px';
     requestAnimationFrame(loop);
