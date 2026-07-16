@@ -65,34 +65,63 @@ function startBot() {
 
     if (customId === 'ticket_claim') {
       if (!isStaffUser) return interaction.reply({ content: 'Apenas staff pode assumir tickets.', ephemeral: true });
-      const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-      const fields = embed.data.fields || [];
-      const existing = fields.find(f => f.name === '👤 Assumido por');
-      if (existing) {
-        existing.value = '<@' + user.id + '>';
-      } else {
-        embed.addFields({ name: '👤 Assumido por', value: '<@' + user.id + '>', inline: true });
-      }
-      await interaction.update({ embeds: [embed] });
-      await channel.send({ content: '<@' + user.id + '> assumiu este ticket.' });
+      const claimEmbed = new EmbedBuilder()
+        .setColor(0x1A56DB)
+        .setTitle('👤 Ticket Assumido')
+        .setDescription('<@' + user.id + '> assumiu este ticket.\nAgora ele está responsável pelo atendimento.')
+        .setTimestamp();
+      await interaction.reply({ embeds: [claimEmbed] });
+      await channel.send({ content: '👋 <@' + user.id + '> assumiu este ticket. Bem-vindo ao atendimento!' });
     }
 
     if (customId === 'ticket_notify') {
       if (!isStaffUser) return interaction.reply({ content: 'Apenas staff pode notificar membros.', ephemeral: true });
       const topic = channel.topic || '';
-      const parts = topic.split('|');
+      const parts = topic.split(' | ');
       const buyerName = parts[1]?.trim() || 'Comprador';
-      await channel.send({ content: '**🔔 Notificação:** <@' + user.id + '> está aguardando resposta do comprador (' + buyerName + '). Por favor, responda o ticket.' });
-      await interaction.reply({ content: 'Membro notificado!', ephemeral: true });
+      const buyerEmail = parts[2]?.trim() || '';
+      const buyerDiscordId = parts[3]?.trim() || '';
+
+      // Tenta mandar DM pro comprador
+      let dmSent = false;
+      if (buyerDiscordId) {
+        try {
+          const dmUser = await discordClient.users.fetch(buyerDiscordId);
+          if (dmUser) {
+            const dmEmbed = new EmbedBuilder()
+              .setColor(0x0D9488)
+              .setTitle('🔔 Você foi notificado!')
+              .setDescription('Olá **' + buyerName + '**!\n\nUm membro da equipe **ZK Studio** está aguardando sua resposta no ticket de compra.\n\nAcesse o ticket e responda para prosseguir com o atendimento.')
+              .addFields(
+                { name: '📦 Produto', value: '`' + (parts[0]?.replace('compra','').trim() || 'N/A') + '`', inline: true },
+                { name: '🔗 Acesse o ticket', value: '[Clique aqui](https://discord.com/channels/' + guildId + '/' + channel.id + ')', inline: true }
+              )
+              .setFooter({ text: 'ZK Studio — Suporte' })
+              .setTimestamp();
+            await dmUser.send({ embeds: [dmEmbed] });
+            dmSent = true;
+          }
+        } catch(_) {}
+      }
+
+      const notifyEmbed = new EmbedBuilder()
+        .setColor(0xF59E0B)
+        .setTitle('🔔 Notificação Enviada')
+        .setDescription('<@' + user.id + '> notificou o comprador **' + buyerName + '**.' + (dmSent ? '\n✅ Mensagem enviada via DM.' : '\n⚠️ Não foi possível enviar DM (comprador pode estar com DM desativada).'))
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [notifyEmbed] });
     }
 
     if (customId === 'ticket_close') {
       if (!isStaffUser) return interaction.reply({ content: 'Apenas staff pode fechar tickets.', ephemeral: true });
-      const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-      embed.setColor(0xEF4444);
-      embed.addFields({ name: '🔒 Status', value: 'Fechado por <@' + user.id + '>', inline: false });
-      await interaction.update({ embeds: [embed], components: [] });
-      await channel.send({ content: '🔒 Ticket fechado por <@' + user.id + '>. Este canal será deletado em 10 segundos.' });
+      const closeEmbed = new EmbedBuilder()
+        .setColor(0xEF4444)
+        .setTitle('🔒 Ticket Encerrado')
+        .setDescription('Este ticket foi encerrado por <@' + user.id + '>.\nO canal será deletado em **10 segundos**.')
+        .setTimestamp();
+      await interaction.update({ embeds: [closeEmbed], components: [] });
+      await channel.send({ content: '🔒 Ticket fechado. Canal será deletado em 10 segundos...' });
       setTimeout(async () => {
         try { await channel.delete(); } catch(_){}
       }, 10000);
@@ -774,31 +803,63 @@ const server = http.createServer(async (req, res) => {
       if (botReady && discordClient) {
         const guild = discordClient.guilds.cache.get(guildId);
         const ch = guild ? guild.channels.cache.get(channel.id) : null;
+
+        // Mapeia produto pra imagem
+        const productImages = {
+          'PAINEL ADMIN': 'https://zkstudio-production-32185.up.railway.app/produtos/paineis.png',
+          'PAINEL PUNIÇÃO': 'https://zkstudio-production-32185.up.railway.app/produtos/prisao.png',
+          'PAINEL STREAMER': 'https://zkstudio-production-32185.up.railway.app/produtos/economy.png',
+          'Sistema Peds': 'https://zkstudio-production-32185.up.railway.app/produtos/peds.png',
+          'Anti-cheater': 'https://zkstudio-production-32185.up.railway.app/produtos/anticheter.png'
+        };
+        const productImage = productImages[script_name] || '';
+
+        // Busca discord_id do comprador pelo email
+        let buyerDiscordId = '';
+        try {
+          const userR = await pool.query("SELECT discord_id FROM users WHERE email=$1", [user_email]);
+          if (userR.rows.length > 0 && userR.rows[0].discord_id) buyerDiscordId = userR.rows[0].discord_id;
+        } catch(_){}
+
         if (ch) {
+          // Atualiza topic com discord_id
+          try { await ch.setTopic('compra | ' + (user_name||'Anônimo') + ' | ' + (user_email||'') + ' | ' + buyerDiscordId); } catch(_){}
+
           const ticketEmbed = new EmbedBuilder()
-            .setTitle('🛒 Nova Compra')
-            .setColor(0x1A56DB)
+            .setColor(0x0D9488)
+            .setTitle('Ticket de Compra')
+            .setDescription('> **Obrigado por comprar na ZK Studio!**\n> Um membro da equipe irá atender você em breve.\n> Por favor, aguarde e descreva sua necessidade abaixo.')
             .addFields(
-              { name: '📦 Script', value: '```' + script_name + '```', inline: true },
-              { name: '💰 Preço', value: '```' + price + '```', inline: true },
-              { name: 'Status', value: '🔴 Aguardando atendimento', inline: true },
-              { name: '\u200b', value: '\u200b', inline: true },
-              { name: '👤 Comprador', value: '```' + (user_name||'Anônimo') + '```', inline: true },
-              { name: '📧 Email', value: '```' + (user_email||'Não informado') + '```', inline: true },
-              { name: '\u200b', value: '\u200b', inline: true },
-              { name: '🕐 Criado em', value: '<t:' + Math.floor(Date.now()/1000) + ':R>', inline: false }
+              { name: '\u200b', value: '\u200b', inline: false },
+              { name: '📦 Produto', value: '```' + script_name + '```', inline: true },
+              { name: '💰 Valor', value: '```' + price + '```', inline: true },
+              { name: '📊 Status', value: '🔴 Aguardando atendimento', inline: true },
+              { name: '\u200b', value: '\u200b', inline: false },
+              { name: '👤 Comprador', value: (user_name||'Anônimo'), inline: true },
+              { name: '📧 Email', value: (user_email||'Não informado'), inline: true },
+              { name: '🕐 Criado em', value: '<t:' + Math.floor(Date.now()/1000) + ':R>', inline: true }
             )
-            .setFooter({ text: 'ZK Studio — Sistema de Tickets', iconURL: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' })
+            .setFooter({ text: 'ZK Studio — Suporte', iconURL: 'https://cdn-icons-png.flaticon.com/512/1828/1828884.png' })
             .setTimestamp();
+
+          if (productImage) ticketEmbed.setThumbnail(productImage);
 
           const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('ticket_claim').setLabel('Assumir').setEmoji('👋').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('ticket_notify').setLabel('Notificar Membro').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('ticket_close').setLabel('Fechar Ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId('ticket_notify').setLabel('Notificar').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('ticket_close').setLabel('Fechar').setEmoji('🔒').setStyle(ButtonStyle.Danger)
           );
 
           await ch.send({ embeds: [ticketEmbed], components: [row] });
-          await ch.send({ content: '**👋 Olá!** Bem-vindo ao suporte da **ZK Studio**.\nUm membro da equipe irá atendê-lo em breve.\n\nPor favor, descreva sua dúvida ou necessidade abaixo.' });
+
+          // Mensagem de boas-vindas
+          const welcomeEmbed = new EmbedBuilder()
+            .setColor(0x1A56DB)
+            .setTitle('🎮 ZK Studio — Atendimento')
+            .setDescription('Olá **' + (user_name||'Comprador') + '**! Seu ticket de compra foi aberto com sucesso.\n\n📋 **Detalhes da sua compra:**\n> Script: **' + script_name + '**\n> Valor: **' + price + '**\n\nAguarde um membro da equipe responder. Você pode ir respondendo normalmente neste canal.')
+            .setTimestamp();
+
+          await ch.send({ embeds: [welcomeEmbed] });
         }
       } else {
         // Fallback REST API (sem botões)
