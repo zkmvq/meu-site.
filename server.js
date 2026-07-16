@@ -21,8 +21,9 @@ const JWT_SECRET      = process.env.JWT_SECRET       || 'zkstudio_secret_2025';
 const DB_URL          = process.env.DATABASE_URL      || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
 const DISCORD_ID      = process.env.DISCORD_CLIENT_ID     || '1527156310393622538';
 const DISCORD_SECRET  = process.env.DISCORD_CLIENT_SECRET || 'h9T6mVy0cp0WhBy2f7JlB2KzmYGjm0fp';
-const SITE_URL = process.env.SITE_URL
-  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'http://localhost');
+const DISCORD_REDIRECT = process.env.SITE_URL
+  ? `${process.env.SITE_URL}/auth/discord/callback`
+  : 'https://web-production-533e04.up.railway.app/auth/discord/callback';
 
 const pool = new Pool({
   connectionString: DB_URL,
@@ -116,7 +117,7 @@ const server = http.createServer(async (req, res) => {
 
   // Discord OAuth2 — redireciona para tela de autorização do Discord
   if (urlPath === '/auth/discord' && req.method === 'GET') {
-    const redirect = encodeURIComponent(`${SITE_URL}/auth/discord/callback`);
+    const redirect = encodeURIComponent(DISCORD_REDIRECT);
     const url = `https://discord.com/oauth2/authorize?client_id=${DISCORD_ID}&redirect_uri=${redirect}&response_type=code&scope=identify%20email`;
     res.writeHead(302, { Location: url });
     res.end();
@@ -130,7 +131,7 @@ const server = http.createServer(async (req, res) => {
     if (!code) { res.writeHead(302, { Location: '/auth.html?error=discord' }); res.end(); return; }
 
     try {
-      const redirect = `${SITE_URL}/auth/discord/callback`;
+      const redirect = DISCORD_REDIRECT;
 
       // Troca code por access_token
       const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
