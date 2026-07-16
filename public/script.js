@@ -1,6 +1,6 @@
 // === ZK STUDIO — SCRIPT.JS ===
 
-// ── DISCORD TOKEN CAPTURE ─────────────────────────────────────────────
+// ── DISCORD TOKEN CAPTURE + AUTO BUY ──────────────────────────────────
 (function() {
   const params = new URLSearchParams(window.location.search);
   const dToken = params.get('discord_token');
@@ -9,6 +9,32 @@
     localStorage.setItem('zk_token', dToken);
     try { localStorage.setItem('zk_user', decodeURIComponent(dUser)); } catch(_) {}
     window.history.replaceState({}, '', '/');
+
+    // Verifica se tem compra pendente e cria o ticket automaticamente
+    const pending = localStorage.getItem('zk_pending_buy');
+    if (pending) {
+      localStorage.removeItem('zk_pending_buy');
+      const buy = JSON.parse(pending);
+      setTimeout(async () => {
+        try {
+          showToast('Login realizado! Abrindo ticket...');
+          const r = await fetch('/ticket/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(buy)
+          });
+          const d = await r.json();
+          if (d.ok && d.url) {
+            showToast('Ticket criado! Abrindo Discord...');
+            setTimeout(() => { window.open(d.url, '_blank'); }, 500);
+          } else {
+            showToast(d.error || 'Erro ao criar ticket.');
+          }
+        } catch(_) {
+          showToast('Erro ao criar ticket.');
+        }
+      }, 1000);
+    }
   }
 })();
 
@@ -542,6 +568,16 @@ async function submitBuy() {
   const email = emailEl.value.trim();
   if (!name) { nameEl.style.borderColor = '#ef4444'; nameEl.focus(); return; }
   nameEl.style.borderColor = '';
+
+  // Se não está logado com Discord, salva pendente e redireciona pro OAuth
+  const user = localStorage.getItem('zk_user');
+  if (!user) {
+    const pending = { script_name: buyScriptName, price: buyScriptPrice, user_name: name, user_email: email };
+    localStorage.setItem('zk_pending_buy', JSON.stringify(pending));
+    showToast('Redirecionando para login Discord...');
+    setTimeout(() => { window.location.href = '/auth/discord'; }, 800);
+    return;
+  }
 
   const btn = document.getElementById('buySubmitBtn');
   btn.disabled = true;
