@@ -671,7 +671,7 @@ const server = http.createServer(async (req, res) => {
       const guilds = await guildsRes.json();
       console.log('[TICKET] Servidores do bot:', JSON.stringify(guilds.map(g=>({id:g.id,name:g.name}))));
       if (!guilds.length) return jsonRes(res,500,{error:'Bot não está em nenhum servidor.'});
-      const guildId = guilds[0].id;
+      const guildId = cfg.discord?.ticket_guild_id || guilds[0].id;
 
       // Cria canal na categoria de compras
       const channelName = 'compra-' + (user_name||'user').toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').substring(0,20) + '-' + Date.now().toString(36);
