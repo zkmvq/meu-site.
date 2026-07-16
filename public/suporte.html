@@ -3,135 +3,109 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZK Studio — Suporte</title>
+  <title>ZK Studio — Painel de Suporte</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --blue:#1A56DB;--blue-light:#4F8EF7;--blue-bright:#60A5FA;
-      --blue-dark:#1239A8;--bg:#03081C;--bg2:#050C24;--bg3:#07102E;
-      --card:#081230;--card-border:#162050;--text:#CBD5E1;
-      --text-muted:#64748B;--white:#F1F5FF;--green:#22C55E;--red:#EF4444;
-      --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
-    }
+    :root{--blue:#1A56DB;--blue-light:#4F8EF7;--blue-bright:#60A5FA;--blue-dark:#1239A8;--bg:#03081C;--bg2:#050C24;--bg3:#07102E;--card:#081230;--card-border:#162050;--text:#CBD5E1;--text-muted:#64748B;--white:#F1F5FF;--green:#22C55E;--red:#EF4444;--yellow:#EAB308;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;}
     *{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+    .bg-glow{position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);z-index:0;}
+    .bg-glow-1{width:600px;height:600px;background:rgba(26,86,219,0.08);top:-200px;left:-200px;}
+    .bg-glow-2{width:500px;height:500px;background:rgba(26,86,219,0.06);bottom:-150px;right:-150px;}
 
     .navbar{background:rgba(3,8,28,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(26,86,219,0.2);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:60px;flex-shrink:0;z-index:100;}
     .navbar img{height:38px;}
     .navbar-title{font-size:0.85rem;font-weight:700;color:var(--white);margin-left:0.5rem;}
+    .navbar-badge{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);font-size:0.65rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px;letter-spacing:0.1em;}
     .navbar-right{margin-left:auto;display:flex;align-items:center;gap:1rem;}
     .nav-user{display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--text-muted);}
     .nav-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;}
+    .nav-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;}
     .btn-logout{background:none;border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
     .btn-logout:hover{background:rgba(239,68,68,0.1);}
     .btn-back{background:none;border:1px solid rgba(26,86,219,0.3);color:var(--blue-bright);padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);text-decoration:none;transition:all 0.2s;}
     .btn-back:hover{background:rgba(26,86,219,0.1);}
 
-    .layout{display:flex;flex:1;overflow:hidden;}
+    .layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;}
+    .sidebar{width:220px;background:var(--bg2);border-right:1px solid rgba(26,86,219,0.12);padding:1.5rem 0;flex-shrink:0;}
+    .sidebar-item{display:flex;align-items:center;gap:0.7rem;padding:0.7rem 1.5rem;color:var(--text-muted);font-size:0.83rem;font-weight:600;cursor:pointer;transition:all 0.2s;border-left:2px solid transparent;}
+    .sidebar-item:hover{color:var(--blue-bright);background:rgba(26,86,219,0.06);}
+    .sidebar-item.active{color:var(--blue-bright);background:rgba(26,86,219,0.08);border-left-color:var(--blue-bright);}
+    .sidebar-item .si-icon{font-size:1.1rem;flex-shrink:0;}
+    .sidebar-sep{height:1px;background:rgba(26,86,219,0.1);margin:0.8rem 1.5rem;}
 
-    .sidebar{width:320px;background:var(--bg2);border-right:1px solid rgba(26,86,219,0.12);display:flex;flex-direction:column;flex-shrink:0;}
-    .sidebar-header{padding:1rem 1.2rem;border-bottom:1px solid rgba(26,86,219,0.1);display:flex;align-items:center;justify-content:space-between;}
-    .sidebar-header h3{font-size:0.85rem;font-weight:700;color:var(--white);}
-    .badge-count{background:var(--blue);color:#fff;font-size:0.65rem;padding:0.15rem 0.55rem;border-radius:10px;font-weight:700;}
-    .btn-new-ticket{background:var(--blue);color:#fff;border:none;padding:0.5rem 1rem;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;}
-    .btn-new-ticket:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
+    .content{flex:1;overflow-y:auto;padding:2rem;}
+    .content::-webkit-scrollbar{width:4px;}
+    .content::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+    .page{display:none;}
+    .page.active{display:block;}
 
-    .ticket-list{flex:1;overflow-y:auto;padding:0.5rem;}
-    .ticket-list::-webkit-scrollbar{width:4px;}
-    .ticket-list::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
-    .ticket-item{padding:0.9rem 1rem;border-radius:10px;cursor:pointer;transition:all 0.2s;border:1px solid transparent;margin-bottom:0.4rem;position:relative;}
-    .ticket-item:hover{background:var(--card);border-color:rgba(26,86,219,0.2);}
-    .ticket-item.active{background:var(--card);border-color:rgba(26,86,219,0.45);}
-    .ticket-item .t-subject{font-size:0.88rem;font-weight:600;color:var(--white);margin-bottom:0.2rem;display:flex;align-items:center;gap:0.5rem;}
-    .ticket-item .t-preview{font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .ticket-item .t-meta{font-size:0.68rem;color:var(--text-muted);margin-top:0.3rem;display:flex;align-items:center;gap:0.6rem;}
-    .ticket-item .t-time{position:absolute;top:0.9rem;right:0.8rem;font-size:0.68rem;color:var(--text-muted);}
-    .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-    .status-open{background:var(--green);}
-    .status-closed{background:var(--red);}
+    .page-title{font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:1.5rem;display:flex;align-items:center;gap:0.7rem;}
+    .page-title .pt-icon{font-size:1.4rem;}
 
-    .no-tickets{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:0.8rem;color:var(--text-muted);font-size:0.85rem;text-align:center;padding:2rem;}
-    .no-tickets .nt-icon{font-size:2.5rem;opacity:0.4;}
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;}
+    .stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:1.2rem 1.5rem;}
+    .stat-card .sc-num{font-size:2rem;font-weight:900;color:var(--blue-bright);font-family:var(--mono);}
+    .stat-card .sc-label{font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.3rem;}
 
-    .chat-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
-    .chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;color:var(--text-muted);}
-    .chat-empty .ce-icon{font-size:3rem;opacity:0.3;}
-    .chat-empty p{font-size:0.9rem;}
+    .table-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:14px;overflow:hidden;margin-bottom:1.5rem;}
+    table{width:100%;border-collapse:collapse;}
+    th{background:var(--bg3);padding:0.75rem 1rem;font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;text-align:left;border-bottom:1px solid var(--card-border);}
+    td{padding:0.85rem 1rem;font-size:0.83rem;border-bottom:1px solid rgba(22,32,80,0.5);vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:rgba(26,86,219,0.04);}
+    .td-name{font-weight:600;color:var(--white);}
+    .td-mono{font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);}
 
-    .chat-header{padding:0.9rem 1.5rem;background:var(--bg3);border-bottom:1px solid rgba(26,86,219,0.15);display:flex;align-items:center;gap:0.9rem;flex-shrink:0;}
-    .chat-header .ch-info{flex:1;}
-    .chat-header .ch-name{font-size:0.92rem;font-weight:700;color:var(--white);}
-    .chat-header .ch-status{font-size:0.72rem;color:var(--green);}
-    .chat-header .ch-status.closed{color:var(--red);}
-    .btn-close-ticket{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
-    .btn-close-ticket:hover{background:rgba(239,68,68,0.25);}
-    .btn-reopen{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
-    .btn-reopen:hover{background:rgba(34,197,94,0.25);}
+    .badge{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.68rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px;}
+    .badge-green{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
+    .badge-blue{background:rgba(26,86,219,0.12);color:var(--blue-bright);border:1px solid rgba(26,86,219,0.25);}
+    .badge-red{background:rgba(239,68,68,0.12);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25);}
+    .badge-yellow{background:rgba(234,179,8,0.12);color:var(--yellow);border:1px solid rgba(234,179,8,0.25);}
 
-    .chat-messages{flex:1;overflow-y:auto;padding:1.2rem 1.5rem;display:flex;flex-direction:column;gap:0.8rem;}
-    .chat-messages::-webkit-scrollbar{width:4px;}
-    .chat-messages::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px;}
+    .form-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;}
+    .form-card h3{font-size:0.9rem;font-weight:700;color:var(--white);margin-bottom:1rem;}
+    .form-row{display:flex;gap:0.8rem;flex-wrap:wrap;}
+    .form-input{flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;transition:border-color 0.2s;}
+    .form-input:focus{outline:none;border-color:var(--blue);}
+    .form-input::placeholder{color:var(--text-muted);}
+    .btn-primary{background:var(--blue);color:#fff;border:none;padding:0.65rem 1.3rem;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;white-space:nowrap;}
+    .btn-primary:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
+    .btn-danger{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
+    .btn-danger:hover{background:rgba(239,68,68,0.25);}
+    .btn-sm{padding:0.35rem 0.8rem;font-size:0.75rem;}
 
-    .msg{display:flex;gap:0.6rem;align-items:flex-end;max-width:75%;}
-    .msg.from-user{align-self:flex-start;}
-    .msg.from-staff{align-self:flex-end;flex-direction:row-reverse;}
-    .msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.85rem;}
-    .msg.from-user .msg-avatar{background:linear-gradient(135deg,#334155,#1e293b);}
-    .msg.from-staff .msg-avatar{background:linear-gradient(135deg,var(--blue),var(--blue-dark));overflow:hidden;}
-    .msg.from-staff .msg-avatar img{width:100%;height:100%;object-fit:contain;border-radius:50%;}
-    .msg-bubble{padding:0.6rem 0.9rem;border-radius:12px;font-size:0.86rem;line-height:1.5;}
-    .msg.from-user .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.06);color:var(--text);border-bottom-left-radius:3px;}
-    .msg.from-staff .msg-bubble{background:var(--blue);color:#fff;border-bottom-right-radius:3px;}
-    .msg-sender{font-size:0.68rem;font-weight:700;color:var(--text-muted);margin-bottom:0.2rem;}
-    .msg.from-staff .msg-sender{color:var(--blue-bright);text-align:right;}
-    .msg-time{font-size:0.62rem;color:var(--text-muted);margin-top:0.3rem;text-align:right;}
+    .msg{padding:0.7rem 1rem;border-radius:8px;font-size:0.82rem;margin-bottom:1rem;display:none;}
+    .msg.show{display:block;}
+    .msg.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#86EFAC;}
+    .msg.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#FCA5A5;}
 
-    .chat-input-area{padding:1rem 1.5rem;background:var(--bg3);border-top:1px solid rgba(26,86,219,0.15);display:flex;gap:0.8rem;align-items:flex-end;flex-shrink:0;}
-    .chat-input-area textarea{flex:1;background:var(--card);border:1px solid rgba(26,86,219,0.25);border-radius:10px;padding:0.75rem 1rem;color:var(--text);font-family:var(--font);font-size:0.88rem;resize:none;min-height:42px;max-height:120px;transition:border-color 0.2s;}
-    .chat-input-area textarea:focus{outline:none;border-color:var(--blue);}
-    .chat-input-area textarea::placeholder{color:var(--text-muted);}
-    .btn-send{width:42px;height:42px;border-radius:10px;border:none;background:var(--blue);color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;font-size:1.1rem;}
-    .btn-send:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
+    .loading{text-align:center;padding:3rem;color:var(--text-muted);font-size:0.9rem;}
+    @keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
 
-    .closed-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:0.6rem 1rem;text-align:center;font-size:0.8rem;color:var(--red);margin:0 1.5rem 0.8rem;}
+    .log-entry{padding:0.7rem 1rem;border-bottom:1px solid rgba(22,32,80,0.3);display:flex;align-items:center;gap:0.8rem;font-size:0.82rem;}
+    .log-entry:last-child{border-bottom:none;}
+    .log-time{font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);white-space:nowrap;}
+    .log-icon{font-size:1rem;}
+    .log-text{flex:1;color:var(--text);}
+    .log-text strong{color:var(--white);}
 
-    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;}
-    .modal-overlay.active{display:flex;}
-    .modal{background:var(--card);border:1px solid var(--card-border);border-radius:16px;padding:2rem;width:90%;max-width:420px;}
-    .modal h3{font-size:1rem;font-weight:700;color:var(--white);margin-bottom:1rem;}
-    .modal input{width:100%;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.7rem 1rem;color:var(--text);font-family:var(--font);font-size:0.88rem;margin-bottom:1rem;}
-    .modal input:focus{outline:none;border-color:var(--blue);}
-    .modal input::placeholder{color:var(--text-muted);}
-    .modal-buttons{display:flex;gap:0.6rem;justify-content:flex-end;}
-    .btn-cancel{background:none;border:1px solid var(--card-border);color:var(--text-muted);padding:0.55rem 1.2rem;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
-    .btn-cancel:hover{background:rgba(255,255,255,0.05);}
-    .btn-confirm{background:var(--blue);color:#fff;border:none;padding:0.55rem 1.2rem;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
-    .btn-confirm:hover{background:var(--blue-dark);}
-
-    #loginRequired{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
-    #loginRequired .lr-icon{font-size:4rem;}
-    #loginRequired h2{color:var(--white);font-size:1.3rem;}
-    #loginRequired p{color:var(--text-muted);font-size:0.88rem;}
-    .btn-login{display:inline-flex;align-items:center;gap:0.6rem;background:var(--blue);color:#fff;border:none;padding:0.8rem 1.8rem;border-radius:9px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;text-decoration:none;}
-    .btn-login:hover{background:var(--blue-dark);box-shadow:0 0 24px rgba(26,86,219,0.4);}
-
-    @media(max-width:768px){
-      .sidebar{width:100%;position:absolute;z-index:50;height:calc(100vh - 60px);top:60px;left:0;transition:transform 0.3s;}
-      .sidebar.hidden-mobile{transform:translateX(-100%);}
-      .chat-area{width:100%;}
-      .msg{max-width:90%;}
-    }
+    #blocked{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
+    #blocked .bl-icon{font-size:4rem;}
+    #blocked h2{color:var(--white);font-size:1.3rem;}
+    #blocked p{color:var(--text-muted);font-size:0.88rem;}
   </style>
 </head>
 <body>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
 
-<!-- NAVBAR -->
 <nav class="navbar">
   <img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />
-  <span class="navbar-title">Suporte</span>
+  <span class="navbar-title">Painel de Suporte</span>
+  <span class="navbar-badge">STAFF</span>
   <div class="navbar-right">
-    <a href="/" class="btn-back">← Voltar ao Site</a>
     <div class="nav-user">
       <div class="nav-avatar" id="navAvatar">?</div>
       <span id="navName">Carregando...</span>
@@ -140,306 +114,595 @@
   </div>
 </nav>
 
-<!-- LOGIN REQUIRED -->
-<div id="loginRequired">
-  <div class="lr-icon">🔒</div>
-  <h2>Faça login para acessar o suporte</h2>
-  <p>Você precisa estar logado para abrir e acompanhar tickets de suporte.</p>
-  <a href="/auth.html" class="btn-login">Entrar</a>
+<div id="blocked">
+  <div class="bl-icon">🔒</div>
+  <h2>Acesso Restrito</h2>
+  <p>Este painel é exclusivo para staff autorizado.</p>
+  <a href="/auth.html" style="display:inline-flex;align-items:center;gap:0.6rem;background:var(--blue);color:#fff;border:none;padding:0.8rem 1.8rem;border-radius:9px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:var(--font);text-decoration:none;">Entrar</a>
 </div>
 
-<!-- LAYOUT -->
 <div class="layout" id="mainLayout" style="display:none">
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <h3>Meus Tickets <span class="badge-count" id="ticketCount">0</span></h3>
-      <button class="btn-new-ticket" onclick="openNewTicketModal()">+ Novo</button>
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showPage('tickets')" data-page="tickets">
+      <span class="si-icon">💬</span> Tickets
     </div>
-    <div class="ticket-list" id="ticketList">
-      <div class="no-tickets">
-        <div class="nt-icon">🎫</div>
-        <p>Nenhum ticket ainda.<br>Abra um para começar.</p>
+    <div class="sidebar-item" onclick="showPage('transcript')" data-page="transcript">
+      <span class="si-icon">📋</span> Transcript
+    </div>
+    <div class="sidebar-item" onclick="showPage('logs')" data-page="logs">
+      <span class="si-icon">📊</span> Logs
+    </div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-item" id="sidebarStaff" onclick="showPage('staff')" data-page="staff" style="display:none">
+      <span class="si-icon">🛡️</span> Gerenciar Staff
+    </div>
+    <div class="sidebar-item" onclick="window.location.href='/staff.html'">
+      <span class="si-icon">⚙️</span> Painel Admin
+    </div>
+    <div class="sidebar-item" onclick="window.location.href='/'">
+      <span class="si-icon">🌐</span> Ver Site
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- TICKETS (CHAT ATIVO) -->
+    <div class="page active" id="page-tickets">
+      <div class="page-title"><span class="pt-icon">💬</span> Tickets Ativos</div>
+      <div class="stats-row" id="ticketStats"></div>
+      <div style="display:flex;gap:1.5rem;min-height:70vh;">
+        <div style="width:300px;flex-shrink:0;">
+          <div class="table-wrap" style="height:100%;display:flex;flex-direction:column;">
+            <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--card-border);font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;display:flex;justify-content:space-between;">
+              <span>Conversas</span>
+              <span id="sessionCount">0</span>
+            </div>
+            <div id="sessionList" style="flex:1;overflow-y:auto;padding:0.5rem;"></div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;">
+          <div class="table-wrap" style="flex:1;display:flex;flex-direction:column;" id="chatContainer">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);padding:2rem;">
+              <p>Selecione um ticket para visualizar</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="chat-area" id="chatArea">
-    <div class="chat-empty">
-      <div class="ce-icon">💬</div>
-      <p>Selecione um ticket ou crie um novo</p>
+    <!-- TRANSCRIPT -->
+    <div class="page" id="page-transcript">
+      <div class="page-title"><span class="pt-icon">📋</span> Transcript — Todos os Tickets</div>
+      <div class="form-card" style="margin-bottom:1rem;">
+        <div class="form-row">
+          <select id="transcriptFilter" class="form-input" style="max-width:200px;" onchange="loadTranscript()">
+            <option value="all">Todos</option>
+            <option value="open">Abertos</option>
+            <option value="closed">Fechados</option>
+          </select>
+          <input class="form-input" id="transcriptSearch" placeholder="Buscar por nome ou assunto..." style="max-width:300px;" oninput="filterTranscript()" />
+        </div>
+      </div>
+      <div id="transcriptList"><div class="loading">Carregando...</div></div>
     </div>
-  </div>
-</div>
 
-<!-- MODAL NOVO TICKET -->
-<div class="modal-overlay" id="newTicketModal">
-  <div class="modal" onclick="event.stopPropagation()">
-    <h3>Abrir Ticket de Suporte</h3>
-    <input type="text" id="ticketSubject" placeholder="Assunto do ticket (ex: Problema com script)" maxlength="200" />
-    <div class="modal-buttons">
-      <button class="btn-cancel" onclick="closeNewTicketModal()">Cancelar</button>
-      <button class="btn-confirm" onclick="createTicket()">Abrir Ticket</button>
+    <!-- LOGS -->
+    <div class="page" id="page-logs">
+      <div class="page-title"><span class="pt-icon">📊</span> Logs de Atividade</div>
+      <div class="stats-row" id="logStats"></div>
+      <div class="table-wrap" id="logList"><div class="loading">Carregando...</div></div>
+    </div>
+
+    <!-- STAFF -->
+    <div class="page" id="page-staff">
+      <div class="page-title"><span class="pt-icon">🛡️</span> Gerenciar Staff</div>
+      <div class="form-card">
+        <h3>Adicionar staff pelo email</h3>
+        <div class="msg" id="staffMsg"></div>
+        <div class="form-row">
+          <input class="form-input" id="newStaffEmail" placeholder="Email do usuário" />
+          <input class="form-input" id="newStaffLabel" placeholder="Cargo (ex: Moderador)" />
+          <button class="btn-primary" onclick="addStaff()">Adicionar</button>
+        </div>
+      </div>
+      <div class="form-card">
+        <h3>Setar produto em usuário</h3>
+        <div class="msg" id="purchaseMsg"></div>
+        <div class="form-row">
+          <input class="form-input" id="purchaseEmail" placeholder="Email do usuário" />
+          <input class="form-input" id="purchaseScript" placeholder="Nome do script" />
+          <input class="form-input" id="purchasePrice" placeholder="Preço (ex: R$ 49,90)" />
+          <button class="btn-primary" onclick="addPurchase()">Setar Produto</button>
+        </div>
+      </div>
+      <div class="page-title" style="font-size:1rem"><span class="pt-icon">👮</span> Staff Atual</div>
+      <div class="table-wrap" id="staffTable"><div class="loading">Carregando...</div></div>
     </div>
   </div>
 </div>
 
 <script>
 const token = localStorage.getItem('zk_token');
-let user = null;
-let isStaffUser = false;
-let tickets = [];
+let isOwner = false;
+let allTickets = [];
+let transcriptData = [];
+let logsData = [];
 let activeTicketId = null;
-let messages = [];
-let polling = null;
+let liveSessions = {};
+let livePolling = null;
 
 async function init() {
-  if (!token) { showLoginRequired(); return; }
+  if (!token) { showBlocked(); return; }
   try {
-    const me = await fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
-    if (!me.user) { showLoginRequired(); return; }
-    user = me.user;
-
-    const staffR = await fetch('/staff/check', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
-    isStaffUser = staffR.ok;
-
-    document.getElementById('loginRequired').style.display = 'none';
+    const r = await fetch('/staff/check', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    if (!r.ok) { showBlocked(); return; }
+    isOwner = d.isAdmin;
+    document.getElementById('blocked').style.display = 'none';
     document.getElementById('mainLayout').style.display = 'flex';
-
-    const av = document.getElementById('navAvatar');
-    if (user.avatar) av.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
-    else av.textContent = user.name.charAt(0).toUpperCase();
-    document.getElementById('navName').textContent = user.name.split(' ')[0];
-
-    if (isStaffUser) {
-      document.querySelector('.sidebar-header h3').innerHTML = 'Todos os Tickets <span class="badge-count" id="ticketCount">0</span>';
+    if (isOwner) document.getElementById('sidebarStaff').style.display = 'flex';
+    const me = await fetch('/auth/me', { headers:{ Authorization:'Bearer '+token } }).then(r=>r.json());
+    if (me.user) {
+      const av = document.getElementById('navAvatar');
+      if (me.user.avatar) av.innerHTML = '<img src="'+me.user.avatar+'" />';
+      else av.textContent = me.user.name.charAt(0).toUpperCase();
+      document.getElementById('navName').textContent = me.user.name.split(' ')[0];
     }
-
     loadTickets();
-  } catch { showLoginRequired(); }
+    loadTranscript();
+    loadLogs();
+    startLivePolling();
+  } catch { showBlocked(); }
 }
 
-function showLoginRequired() {
-  document.getElementById('loginRequired').style.display = 'flex';
+function showBlocked() {
+  document.getElementById('blocked').style.display = 'flex';
   document.getElementById('mainLayout').style.display = 'none';
 }
 
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelector('[data-page="'+name+'"]')?.classList.add('active');
+  if (name === 'staff') loadStaff();
+}
+
+// ── TICKETS ──────────────────────────────────────────────────────────
 async function loadTickets() {
   try {
     const r = await fetch('/support/tickets', { headers:{ Authorization:'Bearer '+token } });
     const d = await r.json();
-    tickets = d.tickets || [];
-    renderTicketList();
+    allTickets = d.tickets || [];
+    const open = allTickets.filter(t => t.status === 'open').length;
+    const closed = allTickets.filter(t => t.status === 'closed').length;
+    document.getElementById('ticketStats').innerHTML =
+      '<div class="stat-card"><div class="sc-num">'+allTickets.length+'</div><div class="sc-label">Total</div></div>'+
+      '<div class="stat-card"><div class="sc-num" style="color:var(--green)">'+open+'</div><div class="sc-label">Abertos</div></div>'+
+      '<div class="stat-card"><div class="sc-num" style="color:var(--red)">'+closed+'</div><div class="sc-label">Fechados</div></div>';
+    renderSessionList();
   } catch(e) { console.error(e); }
 }
 
-function renderTicketList() {
-  const el = document.getElementById('ticketList');
-  document.getElementById('ticketCount').textContent = tickets.length;
+function renderSessionList() {
+  const el = document.getElementById('sessionList');
+  const liveIds = Object.keys(liveSessions);
+  document.getElementById('sessionCount').textContent = allTickets.length + liveIds.length;
+  let html = '';
 
-  if (!tickets.length) {
-    el.innerHTML = '<div class="no-tickets"><div class="nt-icon">🎫</div><p>Nenhum ticket ainda.<br>Abra um para começar.</p></div>';
-    return;
+  if (liveIds.length) {
+    html += '<div style="padding:0.5rem 0.5rem;font-size:0.68rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;">🟢 AO VIVO</div>';
+    html += liveIds.map(id => {
+      const s = liveSessions[id];
+      const last = s.messages[s.messages.length-1];
+      const preview = last ? last.text.slice(0,35)+(last.text.length>35?'...':'') : '';
+      const time = last ? last.time : '';
+      return '<div style="padding:0.8rem;border-radius:8px;cursor:pointer;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);margin-bottom:0.3rem;" onclick="selectLiveSession(\''+id+'\')">'+
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse-green 2s infinite;"></span>'+
+          '<span style="font-size:0.85rem;font-weight:600;color:var(--white);">👤 '+esc(s.name)+'</span>'+
+        '</div>'+
+        '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(preview)+'</div>'+
+        '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.3rem;">'+time+' · '+s.messages.length+' msgs</div>'+
+      '</div>';
+    }).join('');
   }
 
-  el.innerHTML = tickets.map(t => {
-    const lastMsg = t.last_msg ? t.last_msg.slice(0, 40) + (t.last_msg.length > 40 ? '...' : '') : 'Sem mensagens';
-    const time = new Date(t.updated_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
-    const isOpen = t.status === 'open';
-    const userName = t.user_name ? t.user_name : '';
-    return `<div class="ticket-item ${t.id === activeTicketId ? 'active' : ''}" onclick="selectTicket(${t.id})">
-      <div class="t-subject">
-        <span class="status-dot ${isOpen ? 'status-open' : 'status-closed'}"></span>
-        ${esc(t.subject)}
-      </div>
-      <div class="t-preview">${esc(lastMsg)}</div>
-      <div class="t-meta">
-        ${isStaffUser && userName ? `<span>👤 ${esc(userName)}</span>` : ''}
-        <span>${isOpen ? 'Aberto' : 'Fechado'}</span>
-        <span>${t.msg_count || 0} msgs</span>
-      </div>
-      <span class="t-time">${time}</span>
-    </div>`;
-  }).join('');
+  if (allTickets.length) {
+    if (liveIds.length) html += '<div style="padding:0.5rem 0.5rem;font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;border-top:1px solid var(--card-border);margin-top:0.5rem;">📋 TICKETS</div>';
+    html += allTickets.map(t => {
+      const lastMsg = t.last_msg ? t.last_msg.slice(0,35)+(t.last_msg.length>35?'...':'') : 'Sem msgs';
+      const time = new Date(t.updated_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
+      const isOpen = t.status === 'open';
+      return '<div style="padding:0.8rem;border-radius:8px;cursor:pointer;border:1px solid '+(t.id===activeTicketId?'rgba(26,86,219,0.45)':'transparent')+';background:'+(t.id===activeTicketId?'var(--card)':'')+';margin-bottom:0.3rem;" onclick="selectTicket('+t.id+')">'+
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">'+
+          '<span style="width:8px;height:8px;border-radius:50%;background:'+(isOpen?'var(--green)':'var(--red)')+'"></span>'+
+          '<span style="font-size:0.85rem;font-weight:600;color:var(--white);">'+esc(t.subject)+'</span>'+
+        '</div>'+
+        '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.2rem;">👤 '+esc(t.user_name||'?')+' ('+esc(t.user_email||'')+')</div>'+
+        '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(lastMsg)+'</div>'+
+        '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.3rem;">'+time+' · '+(t.msg_count||0)+' msgs</div>'+
+      '</div>';
+    }).join('');
+  }
+
+  if (!liveIds.length && !allTickets.length) {
+    html = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.85rem;">Nenhum ticket ou conversa ativa</div>';
+  }
+
+  el.innerHTML = html;
 }
 
-async function selectTicket(id) {
-  activeTicketId = id;
-  renderTicketList();
-  stopPolling();
-
-  const ticket = tickets.find(t => t.id === id);
-  if (!ticket) return;
-
-  const isOpen = ticket.status === 'open';
-
-  document.getElementById('chatArea').innerHTML = `
-    <div class="chat-header">
-      <div class="ch-info">
-        <div class="ch-name">${esc(ticket.subject)}</div>
-        <div class="ch-status ${isOpen ? '' : 'closed'}">${isOpen ? '🟢 Aberto' : '🔴 Fechado'}${ticket.user_name && isStaffUser ? ' — ' + esc(ticket.user_name) + ' (' + esc(ticket.user_email) + ')' : ''}</div>
-      </div>
-      ${isStaffUser && isOpen ? `<button class="btn-close-ticket" onclick="closeTicket(${id})">✕ Fechar</button>` : ''}
-      ${!isOpen ? `<button class="btn-reopen" onclick="reopenTicket(${id})">🔄 Reabrir</button>` : ''}
-    </div>
-    <div class="chat-messages" id="msgs-${id}"></div>
-    ${isOpen ? `<div class="chat-input-area">
-      <textarea id="chatInput" placeholder="Digite sua mensagem..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-      <button class="btn-send" onclick="sendMessage()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-      </button>
-    </div>` : `<div class="closed-banner">Este ticket está fechado.</div>`}
-  `;
-
-  await loadMessages(id);
-  if (isOpen) startPolling(id);
+async function selectLiveSession(id) {
+  activeTicketId = null;
+  renderSessionList();
+  const s = liveSessions[id];
+  if (!s) return;
+  const container = document.getElementById('chatContainer');
+  container.innerHTML =
+    '<div style="padding:0.9rem 1.2rem;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:0.8rem;">'+
+      '<div>'+
+        '<div style="font-size:0.92rem;font-weight:700;color:var(--white);">Chat ao vivo — '+esc(s.name)+'</div>'+
+        '<div style="font-size:0.72rem;color:var(--green);">🟢 Online · '+esc(s.email||'Sem email')+'</div>'+
+      '</div>'+
+      '<div style="margin-left:auto;display:flex;gap:0.5rem;">'+
+        '<button class="btn-danger btn-sm" onclick="closeLiveSession(\''+id+'\')">✕ Encerrar</button>'+
+      '</div>'+
+    '</div>'+
+    '<div id="chatMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.6rem;"></div>'+
+    '<div style="padding:0.8rem 1rem;border-top:1px solid var(--card-border);display:flex;gap:0.6rem;">'+
+      '<textarea id="staffReplyInput" style="flex:1;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;resize:none;min-height:38px;max-height:100px;" placeholder="Digite sua resposta..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendLiveReply(\''+id+'\');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'+
+      '<button class="btn-primary" onclick="sendLiveReply(\''+id+'\')" style="height:38px;">Enviar</button>'+
+    '</div>';
+  renderLiveMessages(s);
 }
 
-async function loadMessages(ticketId) {
-  try {
-    const r = await fetch(`/support/messages?ticket_id=${ticketId}`, { headers:{ Authorization:'Bearer '+token } });
-    const d = await r.json();
-    messages = d.messages || [];
-    renderMessages();
-  } catch(e) { console.error(e); }
-}
-
-function renderMessages() {
-  const el = document.getElementById('msgs-' + activeTicketId);
+function renderLiveMessages(s) {
+  const el = document.getElementById('chatMessages');
   if (!el) return;
-
-  if (!messages.length) {
-    el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem;font-size:0.85rem;">Nenhuma mensagem ainda.</div>';
-    return;
-  }
-
-  el.innerHTML = messages.map(m => {
-    const isStaff = m.sender_type === 'staff';
-    const name = m.sender_name || (isStaff ? 'ZK Studio' : 'Você');
-    const time = new Date(m.created_at).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-    return `<div class="msg from-${isStaff ? 'staff' : 'user'}">
-      <div class="msg-avatar">
-        ${isStaff ? '<img src="/logos/ZK STUDIO SEM FUNDO.png" alt="ZK" />' : '👤'}
-      </div>
-      <div>
-        <div class="msg-sender">${esc(name)}</div>
-        <div class="msg-bubble">${esc(m.message)}</div>
-        <div class="msg-time">${time}</div>
-      </div>
-    </div>`;
+  el.innerHTML = s.messages.map(m => {
+    const isStaff = m.from === 'admin';
+    const name = isStaff ? 'ZK Studio' : s.name;
+    const time = m.time;
+    return '<div style="display:flex;gap:0.5rem;align-items:flex-end;max-width:75%;'+(isStaff?'align-self:flex-end;flex-direction:row-reverse;':'align-self:flex-start;')+'">'+
+      '<div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'#334155')+';'+(isStaff?'overflow:hidden;':'')+'">'+
+        (isStaff ? '<img src="/logos/ZK STUDIO SEM FUNDO.png" style="width:100%;height:100%;object-fit:contain;" />' : '👤')+
+      '</div>'+
+      '<div>'+
+        '<div style="font-size:0.68rem;font-weight:700;color:'+(isStaff?'var(--blue-bright)':'var(--text-muted)')+';'+(isStaff?'text-align:right;':'')+'">'+esc(name)+'</div>'+
+        '<div style="padding:0.5rem 0.8rem;border-radius:10px;font-size:0.84rem;line-height:1.5;background:'+(isStaff?'var(--blue)':'var(--card)')+';color:'+(isStaff?'#fff':'var(--text)')+';border:'+(isStaff?'none':'1px solid rgba(255,255,255,0.06)')+';border-bottom-'+(isStaff?'right':'left')+'-radius:2px;">'+esc(m.text)+'</div>'+
+        '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.2rem;text-align:right;">'+time+'</div>'+
+      '</div>'+
+    '</div>';
   }).join('');
-
   el.scrollTop = el.scrollHeight;
 }
 
-async function sendMessage() {
-  if (!activeTicketId) return;
-  const inp = document.getElementById('chatInput');
+async function sendLiveReply(id) {
+  const inp = document.getElementById('staffReplyInput');
   if (!inp) return;
   const text = inp.value.trim();
   if (!text) return;
   inp.value = '';
   inp.style.height = '';
+  await fetch('/chat/admin/reply', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id, text })
+  });
+  if (liveSessions[id]) renderLiveMessages(liveSessions[id]);
+}
 
+async function closeLiveSession(id) {
+  if (!confirm('Encerrar esta conversa?')) return;
+  await fetch('/chat/admin/close', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id })
+  });
+  addLog('chat_closed', 'Chat com '+esc(liveSessions[id]?.name||'?')+' encerrado');
+  delete liveSessions[id];
+  document.getElementById('chatContainer').innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);padding:2rem;"><p>Conversa encerrada.</p></div>';
+  renderSessionList();
+}
+
+async function selectTicket(id) {
+  activeTicketId = id;
+  renderSessionList();
+  const ticket = allTickets.find(t => t.id === id);
+  if (!ticket) return;
+  const isOpen = ticket.status === 'open';
+  const container = document.getElementById('chatContainer');
+  container.innerHTML =
+    '<div style="padding:0.9rem 1.2rem;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:0.8rem;">'+
+      '<div>'+
+        '<div style="font-size:0.92rem;font-weight:700;color:var(--white);">'+esc(ticket.subject)+'</div>'+
+        '<div style="font-size:0.72rem;color:'+(isOpen?'var(--green)':'var(--red)')+'">'+(isOpen?'🟢 Aberto':'🔴 Fechado')+' — '+esc(ticket.user_name||'?')+' ('+esc(ticket.user_email||'')+')</div>'+
+      '</div>'+
+      '<div style="margin-left:auto;display:flex;gap:0.5rem;">'+
+        (isOpen ? '<button class="btn-danger btn-sm" onclick="closeTicketFromChat('+id+')">✕ Fechar</button>' :
+         '<button style="background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);padding:0.35rem 0.8rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);" onclick="reopenTicket('+id+')">🔄 Reabrir</button>')+
+      '</div>'+
+    '</div>'+
+    '<div id="chatMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.6rem;"></div>'+
+    (isOpen ?
+      '<div style="padding:0.8rem 1rem;border-top:1px solid var(--card-border);display:flex;gap:0.6rem;">'+
+        '<textarea id="staffReplyInput" style="flex:1;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;resize:none;min-height:38px;max-height:100px;" placeholder="Digite sua resposta..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendStaffReply('+id+');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'+
+        '<button class="btn-primary" onclick="sendStaffReply('+id+')" style="height:38px;">Enviar</button>'+
+      '</div>' :
+      '<div style="padding:0.6rem;text-align:center;font-size:0.8rem;color:var(--red);border-top:1px solid var(--card-border);">Ticket fechado</div>');
+  loadChatMessages(id);
+}
+
+async function loadChatMessages(ticketId) {
   try {
-    await fetch('/support/message', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body: JSON.stringify({ ticket_id: activeTicketId, message: text })
-    });
-    await loadMessages(activeTicketId);
+    const r = await fetch('/support/messages?ticket_id='+ticketId, { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    const el = document.getElementById('chatMessages');
+    if (!el) return;
+    const msgs = d.messages || [];
+    if (!msgs.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem;">Nenhuma mensagem ainda.</div>';
+      return;
+    }
+    el.innerHTML = msgs.map(m => {
+      const isStaff = m.sender_type === 'staff';
+      const name = m.sender_name || (isStaff ? 'ZK Studio' : 'Usuário');
+      const time = new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return '<div style="display:flex;gap:0.5rem;align-items:flex-end;max-width:75%;'+(isStaff?'align-self:flex-end;flex-direction:row-reverse;':'align-self:flex-start;')+'">'+
+        '<div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'#334155')+';'+(isStaff?'overflow:hidden;':'')+'">'+
+          (isStaff ? '<img src="/logos/ZK STUDIO SEM FUNDO.png" style="width:100%;height:100%;object-fit:contain;" />' : '👤')+
+        '</div>'+
+        '<div>'+
+          '<div style="font-size:0.68rem;font-weight:700;color:'+(isStaff?'var(--blue-bright)':'var(--text-muted)')+';'+(isStaff?'text-align:right;':'')+'">'+esc(name)+'</div>'+
+          '<div style="padding:0.5rem 0.8rem;border-radius:10px;font-size:0.84rem;line-height:1.5;background:'+(isStaff?'var(--blue)':'var(--card)')+';color:'+(isStaff?'#fff':'var(--text)')+';border:'+(isStaff?'none':'1px solid rgba(255,255,255,0.06)')+';border-bottom-'+(isStaff?'right':'left')+'-radius:2px;">'+esc(m.message)+'</div>'+
+          '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.2rem;text-align:right;">'+time+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    el.scrollTop = el.scrollHeight;
   } catch(e) { console.error(e); }
 }
 
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+async function sendStaffReply(ticketId) {
+  const inp = document.getElementById('staffReplyInput');
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  inp.style.height = '';
+  await fetch('/support/message', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ ticket_id: ticketId, message: text })
+  });
+  await loadChatMessages(ticketId);
 }
 
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-}
-
-async function closeTicket(id) {
+async function closeTicketFromChat(id) {
   if (!confirm('Fechar este ticket?')) return;
   await fetch('/support/close', {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
     body: JSON.stringify({ ticket_id: id })
   });
-  stopPolling();
-  await loadTickets();
-  if (activeTicketId === id) selectTicket(id);
-}
-
-async function reopenTicket(id) {
-  await fetch('/support/reopen', {
-    method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({ ticket_id: id })
-  });
+  addLog('ticket_closed', 'Ticket #'+id+' fechado pelo staff');
   await loadTickets();
   selectTicket(id);
 }
 
-function openNewTicketModal() {
-  document.getElementById('newTicketModal').classList.add('active');
-  document.getElementById('ticketSubject').value = '';
-  document.getElementById('ticketSubject').focus();
+async function reopenTicket(id) {
+  await fetch('/support/reopen', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ ticket_id: id })
+  });
+  addLog('ticket_reopened', 'Ticket #'+id+' reaberto');
+  await loadTickets();
+  selectTicket(id);
 }
 
-function closeNewTicketModal() {
-  document.getElementById('newTicketModal').classList.remove('active');
+// ── LIVE CHAT SESSIONS ───────────────────────────────────────────────
+function startLivePolling() {
+  if (livePolling) return;
+  pollLiveSessions();
 }
 
-async function createTicket() {
-  const subject = document.getElementById('ticketSubject').value.trim();
-  if (!subject) { alert('Informe o assunto.'); return; }
+async function pollLiveSessions() {
   try {
-    const r = await fetch('/support/ticket', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body: JSON.stringify({ subject })
-    });
+    const r = await fetch('/chat/admin/sessions');
+    const list = await r.json();
+    const newMap = {};
+    list.forEach(s => { newMap[s.id] = s; });
+    liveSessions = newMap;
+    renderSessionList();
+  } catch(e) {}
+  livePolling = setTimeout(pollLiveSessions, 2000);
+}
+
+// ── TRANSCRIPT ───────────────────────────────────────────────────────
+async function loadTranscript() {
+  try {
+    const r = await fetch('/support/tickets', { headers:{ Authorization:'Bearer '+token } });
     const d = await r.json();
-    if (r.ok) {
-      closeNewTicketModal();
-      await loadTickets();
-      selectTicket(d.ticket.id);
-    } else {
-      alert(d.error || 'Erro ao criar ticket.');
-    }
-  } catch(e) { alert('Erro ao criar ticket.'); }
+    transcriptData = d.tickets || [];
+    renderTranscript(transcriptData);
+  } catch { document.getElementById('transcriptList').innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
 }
 
-function startPolling(ticketId) {
-  stopPolling();
-  let lastCount = messages.length;
-  polling = setInterval(async () => {
-    if (activeTicketId !== ticketId) { stopPolling(); return; }
-    await loadMessages(ticketId);
-    if (messages.length > lastCount) {
-      lastCount = messages.length;
-    }
-  }, 2000);
+function renderTranscript(tickets) {
+  const el = document.getElementById('transcriptList');
+  if (!tickets.length) {
+    el.innerHTML = '<div class="loading">Nenhum ticket encontrado.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>ID</th><th>Usuário</th><th>Assunto</th><th>Status</th><th>Mensagens</th><th>Criado</th><th>Última Atividade</th><th>Ação</th></tr></thead><tbody>'+
+    tickets.map(t => {
+      const isOpen = t.status === 'open';
+      return '<tr>'+
+        '<td class="td-mono">#'+t.id+'</td>'+
+        '<td><div class="td-name">'+esc(t.user_name||'?')+'</div><div class="td-mono">'+esc(t.user_email||'')+'</div></td>'+
+        '<td>'+esc(t.subject)+'</td>'+
+        '<td><span class="badge '+(isOpen?'badge-green':'badge-red')+'">'+(isOpen?'Aberto':'Fechado')+'</span></td>'+
+        '<td class="td-mono">'+(t.msg_count||0)+'</td>'+
+        '<td class="td-mono">'+new Date(t.created_at).toLocaleDateString('pt-BR')+'</td>'+
+        '<td class="td-mono">'+new Date(t.updated_at).toLocaleDateString('pt-BR')+'</td>'+
+        '<td><button class="btn-primary btn-sm" onclick="viewTranscriptTicket('+t.id+')">Ver</button></td>'+
+      '</tr>';
+    }).join('')+
+  '</tbody></table></div>'+
+  '<div id="transcriptDetail" style="margin-top:1rem;"></div>';
 }
 
-function stopPolling() {
-  if (polling) { clearInterval(polling); polling = null; }
+function filterTranscript() {
+  const search = document.getElementById('transcriptSearch').value.toLowerCase();
+  const filtered = transcriptData.filter(t =>
+    t.subject.toLowerCase().includes(search) ||
+    (t.user_name||'').toLowerCase().includes(search) ||
+    (t.user_email||'').toLowerCase().includes(search)
+  );
+  renderTranscript(filtered);
+}
+
+async function viewTranscriptTicket(id) {
+  try {
+    const r = await fetch('/support/messages?ticket_id='+id, { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    const el = document.getElementById('transcriptDetail');
+    const ticket = d.ticket || {};
+    const msgs = d.messages || [];
+    el.innerHTML =
+      '<div class="form-card">'+
+        '<h3>Ticket #'+id+' — '+esc(ticket.subject||'')+' <span class="badge '+(ticket.status==='open'?'badge-green':'badge-red')+'" style="margin-left:0.5rem;">'+(ticket.status==='open'?'Aberto':'Fechado')+'</span></h3>'+
+        '<div style="max-height:400px;overflow-y:auto;padding:0.5rem 0;">'+
+          (msgs.length ? msgs.map(m => {
+            const isStaff = m.sender_type === 'staff';
+            const name = m.sender_name || (isStaff ? 'ZK Studio' : 'Usuário');
+            const time = new Date(m.created_at).toLocaleString('pt-BR');
+            return '<div style="padding:0.5rem 0;border-bottom:1px solid var(--card-border);display:flex;gap:0.6rem;">'+
+              '<div style="font-size:0.72rem;color:'+(isStaff?'var(--blue-bright)':'var(--green)')+';font-weight:700;white-space:nowrap;">'+esc(name)+'</div>'+
+              '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">'+time+'</div>'+
+              '<div style="font-size:0.82rem;color:var(--text);flex:1;">'+esc(m.message)+'</div>'+
+            '</div>';
+          }).join('') : '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Sem mensagens</div>')+
+        '</div>'+
+      '</div>';
+  } catch(e) { console.error(e); }
+}
+
+// ── LOGS ─────────────────────────────────────────────────────────────
+let localLogs = [];
+
+async function loadLogs() {
+  const open = allTickets.filter(t => t.status === 'open').length;
+  const closed = allTickets.filter(t => t.status === 'closed').length;
+  const total = allTickets.length;
+  document.getElementById('logStats').innerHTML =
+    '<div class="stat-card"><div class="sc-num">'+total+'</div><div class="sc-label">Total Tickets</div></div>'+
+    '<div class="stat-card"><div class="sc-num" style="color:var(--green)">'+open+'</div><div class="sc-label">Abertos</div></div>'+
+    '<div class="stat-card"><div class="sc-num" style="color:var(--red)">'+closed+'</div><div class="sc-label">Fechados</div></div>';
+
+  const saved = JSON.parse(localStorage.getItem('zk_support_logs')||'[]');
+  localLogs = [...saved];
+
+  allTickets.forEach(t => {
+    localLogs.push({ type:'ticket_created', text:'Ticket #'+t.id+' ('+t.subject+') criado por '+(t.user_name||'?'), time:t.created_at });
+    if (t.status === 'closed') localLogs.push({ type:'ticket_closed', text:'Ticket #'+t.id+' ('+t.subject+') fechado', time:t.updated_at });
+  });
+  localLogs.sort((a,b) => new Date(b.time)-new Date(a.time));
+
+  const el = document.getElementById('logList');
+  if (!localLogs.length) {
+    el.innerHTML = '<div class="loading">Nenhum log ainda.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="table-wrap">'+localLogs.slice(0,50).map(l => {
+    const icon = l.type==='ticket_created'?'🎫':l.type==='ticket_closed'?'🔒':l.type==='staff_added'?'🛡️':l.type==='purchase'?'🛒':'📝';
+    const time = new Date(l.time).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return '<div class="log-entry"><span class="log-icon">'+icon+'</span><span class="log-time">'+time+'</span><span class="log-text">'+esc(l.text)+'</span></div>';
+  }).join('')+'</div>';
+}
+
+function addLog(type, text) {
+  const log = { type, text, time: new Date().toISOString() };
+  localLogs.unshift(log);
+  const saved = localLogs.slice(0,100);
+  localStorage.setItem('zk_support_logs', JSON.stringify(saved));
+}
+
+// ── STAFF ────────────────────────────────────────────────────────────
+async function loadStaff() {
+  document.getElementById('staffTable').innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    const r = await fetch('/staff/list', { headers:{ Authorization:'Bearer '+token } });
+    const d = await r.json();
+    const list = d.staff || [];
+    document.getElementById('staffTable').innerHTML = '<table><thead><tr><th>Email</th><th>Cargo</th><th>Adicionado</th><th>Ação</th></tr></thead><tbody>'+
+      list.map(s => '<tr>'+
+        '<td class="td-mono">'+esc(s.email)+'</td>'+
+        '<td>'+esc(s.label||'Staff')+'</td>'+
+        '<td class="td-mono">'+new Date(s.added_at).toLocaleDateString('pt-BR')+'</td>'+
+        '<td>'+(s.email==='arc39491@gmail.com'?'<span class="badge badge-red">Dono</span>':'<button class="btn-danger btn-sm" onclick="removeStaff(\''+s.email+'\')">Remover</button>')+'</td>'+
+      '</tr>').join('')+
+    '</tbody></table>';
+  } catch { document.getElementById('staffTable').innerHTML = '<div class="loading">Erro.</div>'; }
+}
+
+async function addStaff() {
+  const email = document.getElementById('newStaffEmail').value.trim();
+  const label = document.getElementById('newStaffLabel').value.trim();
+  if (!email) { showMsg('staffMsg','error','Informe o email.'); return; }
+  const r = await fetch('/staff/add', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ email, label })
+  });
+  const d = await r.json();
+  if (r.ok) {
+    showMsg('staffMsg','success','Staff adicionado!');
+    addLog('staff_added', email+' adicionado como staff ('+label+')');
+    document.getElementById('newStaffEmail').value='';
+    document.getElementById('newStaffLabel').value='';
+    loadStaff();
+  } else showMsg('staffMsg','error', d.error||'Erro.');
+}
+
+async function removeStaff(email) {
+  if (!confirm('Remover este staff?')) return;
+  const r = await fetch('/staff/remove', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ email })
+  });
+  const d = await r.json();
+  if (r.ok) { loadStaff(); addLog('staff_removed', email+' removido do staff'); }
+  else alert(d.error||'Erro.');
+}
+
+async function addPurchase() {
+  const user_email = document.getElementById('purchaseEmail').value.trim();
+  const script_name = document.getElementById('purchaseScript').value.trim();
+  const price = document.getElementById('purchasePrice').value.trim();
+  if (!user_email||!script_name||!price) { showMsg('purchaseMsg','error','Preencha todos.'); return; }
+  const r = await fetch('/staff/purchase/add', {
+    method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ user_email, script_name, price })
+  });
+  const d = await r.json();
+  if (r.ok) {
+    showMsg('purchaseMsg','success','Produto setado em '+user_email+'!');
+    addLog('purchase', script_name+' ('+price+') setado para '+user_email);
+    document.getElementById('purchaseEmail').value='';
+    document.getElementById('purchaseScript').value='';
+    document.getElementById('purchasePrice').value='';
+  } else showMsg('purchaseMsg','error', d.error||'Erro.');
+}
+
+function showMsg(id,type,text) {
+  const el = document.getElementById(id);
+  el.className='msg '+type+' show';
+  el.textContent=text;
+  setTimeout(()=>el.className='msg',4000);
 }
 
 function logout() {
   localStorage.removeItem('zk_token');
   localStorage.removeItem('zk_user');
-  window.location.href = '/';
+  window.location.href='/';
 }
-
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-document.getElementById('newTicketModal').addEventListener('click', function(e) {
-  if (e.target === this) closeNewTicketModal();
-});
-
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeNewTicketModal(); });
 
 init();
 </script>
