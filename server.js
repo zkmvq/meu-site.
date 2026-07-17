@@ -141,6 +141,7 @@ async function initDB() {
       email VARCHAR(150) UNIQUE NOT NULL,
       password_hash VARCHAR(200),
       avatar VARCHAR(300),
+      discord_banner VARCHAR(500),
       is_staff BOOLEAN DEFAULT FALSE,
       is_admin BOOLEAN DEFAULT FALSE,
       provider VARCHAR(20) DEFAULT 'local',
@@ -213,6 +214,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_staff BOOLEAN DEFAULT FALSE`).catch(()=>{});
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_id VARCHAR(50) UNIQUE`).catch(()=>{});
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_banner VARCHAR(500)`).catch(()=>{});
   await pool.query(`ALTER TABLE staff_emails ADD COLUMN IF NOT EXISTS discord_id VARCHAR(50)`).catch(()=>{});
   await pool.query(`ALTER TABLE staff_emails ALTER COLUMN email DROP NOT NULL`).catch(()=>{});
   // Garante que o dono está na tabela de staff
@@ -338,7 +340,7 @@ const server = http.createServer(async (req, res) => {
     const decoded = verifyToken(getToken(req));
     if (!decoded) return jsonRes(res,401,{error:'Não autorizado.'});
     try {
-      const u = await pool.query('SELECT id,name,email,discord_id,avatar,is_admin,is_staff,created_at FROM users WHERE id=$1',[decoded.id]);
+      const u = await pool.query('SELECT id,name,email,discord_id,avatar,discord_banner,is_admin,is_staff,created_at FROM users WHERE id=$1',[decoded.id]);
       if (!u.rows.length) return jsonRes(res,404,{error:'Usuário não encontrado.'});
       const p = await pool.query('SELECT * FROM purchases WHERE user_id=$1 ORDER BY purchased_at DESC',[decoded.id]);
       jsonRes(res,200,{user:u.rows[0],purchases:p.rows});
@@ -928,21 +930,22 @@ const server = http.createServer(async (req, res) => {
       const discordId = dUser.id;
       const discordName = dUser.username;
       const discordAvatar = dUser.avatar ? 'https://cdn.discordapp.com/avatars/'+discordId+'/'+dUser.avatar+'.png' : null;
+      const discordBanner = dUser.banner ? 'https://cdn.discordapp.com/banners/'+discordId+'/'+dUser.banner+'.png?size=600' : null;
       const discordEmail = dUser.email || null;
       // Procura ou cria usuário
       let user = null;
       const existing = await pool.query("SELECT * FROM users WHERE discord_id=$1",[discordId]);
       if (existing.rows.length) {
         user = existing.rows[0];
-        await pool.query("UPDATE users SET name=$1,avatar=$2 WHERE id=$3",[discordName,discordAvatar,user.id]);
+        await pool.query("UPDATE users SET name=$1,avatar=$2,discord_banner=$3 WHERE id=$4",[discordName,discordAvatar,discordBanner,user.id]);
       } else {
         const emailToUse = discordEmail || (discordId+'@discord.local');
         const emailExists = await pool.query("SELECT * FROM users WHERE email=$1",[emailToUse.toLowerCase()]);
         if (emailExists.rows.length) {
           user = emailExists.rows[0];
-          await pool.query("UPDATE users SET discord_id=$1,name=$2,avatar=$3,provider='discord' WHERE id=$4",[discordId,discordName,discordAvatar,user.id]);
+          await pool.query("UPDATE users SET discord_id=$1,name=$2,avatar=$3,discord_banner=$4,provider='discord' WHERE id=$5",[discordId,discordName,discordAvatar,discordBanner,user.id]);
         } else {
-          const r = await pool.query("INSERT INTO users (name,email,discord_id,avatar,provider) VALUES($1,$2,$3,$4,'discord') RETURNING *",[discordName,emailToUse.toLowerCase(),discordId,discordAvatar]);
+          const r = await pool.query("INSERT INTO users (name,email,discord_id,avatar,discord_banner,provider) VALUES($1,$2,$3,$4,$5,'discord') RETURNING *",[discordName,emailToUse.toLowerCase(),discordId,discordAvatar,discordBanner]);
           user = r.rows[0];
         }
       }
