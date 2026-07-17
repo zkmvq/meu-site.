@@ -425,11 +425,26 @@ const server = http.createServer(async (req, res) => {
   if (urlPath === '/staff/purchase/add' && req.method === 'POST') {
     const decoded = verifyToken(getToken(req));
     if (!decoded||!await isStaff(decoded)) return jsonRes(res,403,{error:'Sem permissão.'});
-    const {user_email,script_name,price} = await readBody(req);
+    const {user_email,user_id,discord_id,script_name,price} = await readBody(req);
     try {
-      const u = await pool.query('SELECT id FROM users WHERE email=$1',[user_email?.toLowerCase()]);
-      if (!u.rows.length) return jsonRes(res,404,{error:'Usuário não encontrado.'});
-      await pool.query('INSERT INTO purchases (user_id,script_name,price,status) VALUES($1,$2,$3,$4)',[u.rows[0].id,script_name,price,'active']);
+      let userId;
+      if (discord_id || (user_id && String(user_id).length >= 17)) {
+        const searchId = discord_id || user_id;
+        const u = await pool.query('SELECT id FROM users WHERE discord_id=$1',[String(searchId)]);
+        if (!u.rows.length) return jsonRes(res,404,{error:'Usuario nao encontrado pelo Discord ID.'});
+        userId = u.rows[0].id;
+      } else if (user_id) {
+        const u = await pool.query('SELECT id FROM users WHERE id=$1',[user_id]);
+        if (!u.rows.length) return jsonRes(res,404,{error:'Usuario nao encontrado pelo ID.'});
+        userId = u.rows[0].id;
+      } else if (user_email) {
+        const u = await pool.query('SELECT id FROM users WHERE email=$1',[user_email?.toLowerCase()]);
+        if (!u.rows.length) return jsonRes(res,404,{error:'Usuario nao encontrado pelo email.'});
+        userId = u.rows[0].id;
+      } else {
+        return jsonRes(res,400,{error:'Informe o email, ID ou Discord ID do usuario.'});
+      }
+      await pool.query('INSERT INTO purchases (user_id,script_name,price,status) VALUES($1,$2,$3,$4)',[userId,script_name,price,'active']);
       jsonRes(res,200,{ok:true});
     } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
     return;
