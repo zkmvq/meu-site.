@@ -461,6 +461,8 @@ const server = http.createServer(async (req, res) => {
       const productInfo = cfg2.products?.[script_name] || {};
       const downloadUrl = productInfo.download || cfg2.discord?.invite || 'https://discord.gg/9BFJTzExWK';
       const guildId = cfg2.discord?.ticket_guild_id || '';
+      const baseUrl = 'https://zkstudio-production-32185.up.railway.app';
+      const downloadLink = baseUrl + '/download?user=' + encodeURIComponent(userDiscordId) + '&product=' + encodeURIComponent(script_name) + '&url=' + encodeURIComponent(downloadUrl);
 
       if (userDiscordId && botReady && discordClient) {
         try {
@@ -474,7 +476,7 @@ const server = http.createServer(async (req, res) => {
                 { name: '📦 Produto', value: '`' + script_name + '`', inline: true },
                 { name: '💰 Valor', value: '`R$ ' + Number(price).toFixed(2) + '`', inline: true },
                 { name: '\u200B', value: '\u200B', inline: true },
-                { name: '⬇️ Download', value: '[Clique aqui para baixar](' + downloadUrl + ')', inline: true },
+                { name: '⬇️ Download', value: '[Clique aqui para baixar](' + downloadLink + ')', inline: true },
               )
               .setFooter({ text: 'ZK Studio — Obrigado pela preferência!' })
               .setTimestamp();
@@ -484,21 +486,6 @@ const server = http.createServer(async (req, res) => {
             }
 
             await dmUser.send({ embeds: [dmEmbed] });
-
-            // Atribui cargo "Cliente"
-            const clienteRoleId = cfg2.discord?.cliente_role_id;
-            if (clienteRoleId && guildId) {
-              try {
-                const token2 = process.env.BOT_TOKEN || cfg2.discord?.bot_token;
-                const roleRes = await fetch('https://discord.com/api/v10/guilds/' + guildId + '/members/' + String(userDiscordId) + '/roles/' + clienteRoleId, {
-                  method: 'PUT',
-                  headers: { Authorization: 'Bot ' + token2 }
-                });
-                console.log('[ROLE] Status:', roleRes.status, roleRes.ok ? 'OK' : await roleRes.text());
-              } catch(roleErr) {
-                console.log('[ROLE] Erro ao atribuir cargo:', roleErr.message);
-              }
-            }
           }
         } catch(dmErr) {
           console.log('[DM] Não foi possível enviar DM:', dmErr.message);
@@ -977,6 +964,8 @@ const server = http.createServer(async (req, res) => {
             const feedbackChannelId = cfg.discord?.feedback_channel_id || '';
             const productInfo = cfg.products?.[script_name] || {};
             const downloadUrl = productInfo.download || cfg.discord?.invite || 'https://discord.gg/9BFJTzExWK';
+            const baseUrl = 'https://zkstudio-production-32185.up.railway.app';
+            const downloadLink = baseUrl + '/download?user=' + encodeURIComponent(buyerDiscordId) + '&product=' + encodeURIComponent(script_name) + '&url=' + encodeURIComponent(downloadUrl);
 
             const dmEmbed = new EmbedBuilder()
               .setColor(0x10B981)
@@ -986,7 +975,7 @@ const server = http.createServer(async (req, res) => {
                 { name: '📦 Produto', value: '`' + script_name + '`', inline: true },
                 { name: '💰 Valor', value: '`' + price + '`', inline: true },
                 { name: '\u200B', value: '\u200B', inline: true },
-                { name: '⬇️ Download', value: '[Clique aqui para baixar](' + downloadUrl + ')', inline: true }
+                { name: '⬇️ Download', value: '[Clique aqui para baixar](' + downloadLink + ')', inline: true }
               )
               .setFooter({ text: 'ZK Studio — Obrigado pela preferência!' })
               .setTimestamp();
@@ -996,21 +985,6 @@ const server = http.createServer(async (req, res) => {
             }
 
             await dmUser.send({ embeds: [dmEmbed] });
-
-            // Atribui cargo "Cliente"
-            const clienteRoleId = cfg.discord?.cliente_role_id;
-            if (clienteRoleId && guildId) {
-              try {
-                const token2 = process.env.BOT_TOKEN || cfg.discord?.bot_token;
-                const roleRes = await fetch('https://discord.com/api/v10/guilds/' + guildId + '/members/' + buyerDiscordId + '/roles/' + clienteRoleId, {
-                  method: 'PUT',
-                  headers: { Authorization: 'Bot ' + token2 }
-                });
-                console.log('[ROLE] Status:', roleRes.status, roleRes.ok ? 'OK' : await roleRes.text());
-              } catch(roleErr) {
-                console.log('[ROLE] Erro ao atribuir cargo:', roleErr.message);
-              }
-            }
           }
         } catch(dmErr) {
           console.log('[DM] Não foi possível enviar DM:', dmErr.message);
@@ -1019,6 +993,36 @@ const server = http.createServer(async (req, res) => {
 
       jsonRes(res,200,{ok:true, url: channelUrl, guild_id: guildId});
     } catch(e) { jsonRes(res,500,{error:'Erro ao criar ticket: '+e.message}); }
+    return;
+  }
+
+  // ── DOWNLOAD + CARGO AUTOMÁTICO ──────────────────────────────────────
+  if (urlPath === '/download' && req.method === 'GET') {
+    const params = new URL('http://x' + req.url).searchParams;
+    const userId = params.get('user');
+    const product = params.get('product');
+    const downloadUrl = params.get('url') || 'https://discord.gg/9BFJTzExWK';
+    const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    const guildId = cfg.discord?.ticket_guild_id;
+    const clienteRoleId = cfg.discord?.cliente_role_id;
+    const token = process.env.BOT_TOKEN || cfg.discord?.bot_token;
+
+    // Atribui cargo "Cliente"
+    if (userId && guildId && clienteRoleId && token && !token.startsWith('USAR_')) {
+      try {
+        const roleRes = await fetch('https://discord.com/api/v10/guilds/' + guildId + '/members/' + userId + '/roles/' + clienteRoleId, {
+          method: 'PUT',
+          headers: { Authorization: 'Bot ' + token }
+        });
+        console.log('[DOWNLOAD+ROLE] Status:', roleRes.status, roleRes.ok ? 'OK' : await roleRes.text());
+      } catch (e) {
+        console.log('[DOWNLOAD+ROLE] Erro:', e.message);
+      }
+    }
+
+    // Redireciona pro download
+    res.writeHead(302, { 'Location': downloadUrl });
+    res.end();
     return;
   }
 
