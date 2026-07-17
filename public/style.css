@@ -481,19 +481,17 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
 /* === CURSOR === */
 * { cursor:none !important; }
 #cursor-dot {
-  position:fixed; top:0; left:0; width:7px; height:7px;
-  background:#fff; border-radius:50%; pointer-events:none;
-  z-index:999999; transform:translate(-50%,-50%);
-  transition:width 0.15s, height 0.15s, background 0.15s;
+  position:fixed; top:0; left:0; width:36px; height:36px;
+  pointer-events:none; z-index:999999; transform:translate(-50%,-50%);
+  transition:width 0.2s, height 0.2s, filter 0.2s;
 }
+#cursor-dot img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 2px 8px rgba(26,86,219,0.5)); }
 #cursor-ring {
   display:none;
-  border:1.5px solid rgba(96,165,250,0.65); border-radius:50%;
-  pointer-events:none; z-index:999998; transform:translate(-50%,-50%);
-  transition:width 0.2s, height 0.2s, border-color 0.2s, background 0.2s;
 }
-body.cursor-hover #cursor-dot { width:10px; height:10px; background:var(--blue-bright); }
-body.cursor-click #cursor-dot  { width:5px; height:5px; }
+body.cursor-hover #cursor-dot { width:42px; height:42px; }
+body.cursor-hover #cursor-dot img { filter:drop-shadow(0 2px 14px rgba(26,86,219,0.8)) brightness(1.2); }
+body.cursor-click #cursor-dot  { width:28px; height:28px; }
 
 /* === RESPONSIVE === */
 @media(min-width:1600px){
