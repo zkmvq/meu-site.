@@ -930,7 +930,7 @@ const server = http.createServer(async (req, res) => {
       const discordId = dUser.id;
       const discordName = dUser.username;
       const discordAvatar = dUser.avatar ? 'https://cdn.discordapp.com/avatars/'+discordId+'/'+dUser.avatar+'.png' : null;
-      const discordBanner = dUser.banner ? 'https://cdn.discordapp.com/banners/'+discordId+'/'+dUser.banner+'.png?size=600' : null;
+      const discordBanner = dUser.banner ? 'https://cdn.discordapp.com/banners/'+discordId+'/'+dUser.banner+(dUser.banner.startsWith('a_')?'.gif':'.png')+'?size=600' : null;
       const discordEmail = dUser.email || null;
       // Procura ou cria usuário
       let user = null;
