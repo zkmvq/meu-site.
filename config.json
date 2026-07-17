@@ -9,7 +9,15 @@
     "redirect_uri": "https://zkstudio-production-32185.up.railway.app/auth/discord/callback",
     "bot_token": "USAR_BOT_TOKEN_NA_VARIÁVEL_DE_AMBIENTE",
     "ticket_guild_id": "1520550763850371175",
-    "ticket_category_id": "1522437463036137602"
+    "ticket_category_id": "1522437463036137602",
+    "feedback_channel_id": "1522437498842644601"
+  },
+  "products": {
+    "PAINEL ADMIN": { "download": "https://discord.gg/9BFJTzExWK" },
+    "PAINEL PUNIÇÃO": { "download": "https://discord.gg/9BFJTzExWK" },
+    "PAINEL STREAMER": { "download": "https://discord.gg/9BFJTzExWK" },
+    "Sistema Peds": { "download": "https://discord.gg/9BFJTzExWK" },
+    "Anti-cheater": { "download": "https://discord.gg/9BFJTzExWK" }
   },
   "contato": {
     "discord": "https://discord.gg/9BFJTzExWK",

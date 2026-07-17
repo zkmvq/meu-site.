@@ -14,7 +14,7 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const { Pool } = require('pg');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField, Partials } = require('discord.js');
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'zkstudio_secret_2025';
 const DB_URL       = process.env.DATABASE_URL || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
@@ -35,7 +35,8 @@ function startBot() {
   if (!token || token.startsWith('USAR_')) { console.log('[BOT] Token não configurado, pulando...'); return; }
 
   const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.DirectMessages],
+    partials: [Partials.Channel]
   });
 
   client.once('ready', () => {
@@ -428,24 +429,68 @@ const server = http.createServer(async (req, res) => {
     const {user_email,user_id,discord_id,script_name,price} = await readBody(req);
     try {
       let userId;
+      let userDiscordId = null;
+      let userName = '';
       if (discord_id || (user_id && String(user_id).length >= 17)) {
         const searchId = discord_id || user_id;
-        const u = await pool.query('SELECT id FROM users WHERE discord_id=$1',[String(searchId)]);
+        const u = await pool.query('SELECT id,discord_id,name FROM users WHERE discord_id=$1',[String(searchId)]);
         if (!u.rows.length) return jsonRes(res,404,{error:'Usuario nao encontrado pelo Discord ID.'});
         userId = u.rows[0].id;
+        userDiscordId = u.rows[0].discord_id;
+        userName = u.rows[0].name || '';
       } else if (user_id) {
-        const u = await pool.query('SELECT id FROM users WHERE id=$1',[user_id]);
+        const u = await pool.query('SELECT id,discord_id,name FROM users WHERE id=$1',[user_id]);
         if (!u.rows.length) return jsonRes(res,404,{error:'Usuario nao encontrado pelo ID.'});
         userId = u.rows[0].id;
+        userDiscordId = u.rows[0].discord_id;
+        userName = u.rows[0].name || '';
       } else if (user_email) {
-        const u = await pool.query('SELECT id FROM users WHERE email=$1',[user_email?.toLowerCase()]);
+        const u = await pool.query('SELECT id,discord_id,name FROM users WHERE email=$1',[user_email?.toLowerCase()]);
         if (!u.rows.length) return jsonRes(res,404,{error:'Usuario nao encontrado pelo email.'});
         userId = u.rows[0].id;
+        userDiscordId = u.rows[0].discord_id;
+        userName = u.rows[0].name || '';
       } else {
         return jsonRes(res,400,{error:'Informe o email, ID ou Discord ID do usuario.'});
       }
       await pool.query('INSERT INTO purchases (user_id,script_name,price,status) VALUES($1,$2,$3,$4)',[userId,script_name,price,'active']);
-      jsonRes(res,200,{ok:true});
+
+      // Envia DM automática pro comprador
+      const cfg2 = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
+      const feedbackChannelId = cfg2.discord?.feedback_channel_id || '';
+      const productInfo = cfg2.products?.[script_name] || {};
+      const downloadUrl = productInfo.download || cfg2.discord?.invite || 'https://discord.gg/9BFJTzExWK';
+      const guildId = cfg2.discord?.ticket_guild_id || '';
+
+      if (userDiscordId && botReady && discordClient) {
+        try {
+          const dmUser = await discordClient.users.fetch(String(userDiscordId));
+          if (dmUser) {
+            const dmEmbed = new EmbedBuilder()
+              .setColor(0x10B981)
+              .setTitle('Compra realizada com sucesso!')
+              .setDescription('Olá **' + (userName || 'Comprador') + '**!\n\nSua compra foi confirmada e liberada. Abaixo você encontra o link de download e o canal de feedback.')
+              .addFields(
+                { name: '📦 Produto', value: '`' + script_name + '`', inline: true },
+                { name: '💰 Valor', value: '`R$ ' + Number(price).toFixed(2) + '`', inline: true },
+                { name: '\u200B', value: '\u200B', inline: true },
+                { name: '⬇️ Download', value: '[Clique aqui para baixar](' + downloadUrl + ')', inline: true },
+              )
+              .setFooter({ text: 'ZK Studio — Obrigado pela preferência!' })
+              .setTimestamp();
+
+            if (feedbackChannelId) {
+              dmEmbed.addFields({ name: '💬 Feedback', value: '[Deixe seu feedback aqui](https://discord.com/channels/' + guildId + '/' + feedbackChannelId + ')', inline: true });
+            }
+
+            await dmUser.send({ embeds: [dmEmbed] });
+          }
+        } catch(dmErr) {
+          console.log('[DM] Não foi possível enviar DM:', dmErr.message);
+        }
+      }
+
+      jsonRes(res,200,{ok:true,dm_sent: !!(userDiscordId && botReady)});
     } catch(e) { jsonRes(res,500,{error:'Erro.'}); }
     return;
   }
@@ -908,6 +953,39 @@ const server = http.createServer(async (req, res) => {
         await pool.query("INSERT INTO orders (buyer_name,buyer_email,items,total) VALUES($1,$2,$3,$4)",
           [user_name||null, user_email||null, JSON.stringify([{name:script_name,price}]), price]);
       } catch(_){}
+
+      // DM automática pro comprador
+      if (buyerDiscordId && botReady && discordClient) {
+        try {
+          const dmUser = await discordClient.users.fetch(buyerDiscordId);
+          if (dmUser) {
+            const feedbackChannelId = cfg.discord?.feedback_channel_id || '';
+            const productInfo = cfg.products?.[script_name] || {};
+            const downloadUrl = productInfo.download || cfg.discord?.invite || 'https://discord.gg/9BFJTzExWK';
+
+            const dmEmbed = new EmbedBuilder()
+              .setColor(0x10B981)
+              .setTitle('Compra realizada com sucesso!')
+              .setDescription('Olá **' + (user_name || 'Comprador') + '**!\n\nSua compra foi confirmada. Abaixo você encontra o link de download e o canal de feedback.')
+              .addFields(
+                { name: '📦 Produto', value: '`' + script_name + '`', inline: true },
+                { name: '💰 Valor', value: '`' + price + '`', inline: true },
+                { name: '\u200B', value: '\u200B', inline: true },
+                { name: '⬇️ Download', value: '[Clique aqui para baixar](' + downloadUrl + ')', inline: true }
+              )
+              .setFooter({ text: 'ZK Studio — Obrigado pela preferência!' })
+              .setTimestamp();
+
+            if (feedbackChannelId) {
+              dmEmbed.addFields({ name: '💬 Feedback', value: '[Deixe seu feedback aqui](https://discord.com/channels/' + guildId + '/' + feedbackChannelId + ')', inline: true });
+            }
+
+            await dmUser.send({ embeds: [dmEmbed] });
+          }
+        } catch(dmErr) {
+          console.log('[DM] Não foi possível enviar DM:', dmErr.message);
+        }
+      }
 
       jsonRes(res,200,{ok:true, url: channelUrl, guild_id: guildId});
     } catch(e) { jsonRes(res,500,{error:'Erro ao criar ticket: '+e.message}); }
