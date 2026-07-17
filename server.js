@@ -829,7 +829,7 @@ const server = http.createServer(async (req, res) => {
 
   // ── TICKET DISCORD ──────────────────────────────────────────────────
   if (urlPath==='/ticket/create'&&req.method==='POST') {
-    const {script_name, price, user_name, user_email} = await readBody(req);
+    const {script_name, price, user_name, user_email, coupon_code} = await readBody(req);
     if (!script_name||!price) return jsonRes(res,400,{error:'Dados obrigatórios.'});
     try {
       const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
@@ -891,6 +891,7 @@ const server = http.createServer(async (req, res) => {
             { name: '📦 Produto', value: '```' + script_name + '```', inline: true },
             { name: '💰 Valor', value: '```' + price + '```', inline: true },
             { name: '📊 Status', value: '🔴 Aguardando atendimento', inline: true },
+            ...(coupon_code ? [{ name: '🎟️ Cupom', value: '```' + coupon_code + '```', inline: true }] : []),
             { name: '\u200b', value: '\u200b', inline: false },
             { name: '👤 Comprador', value: (user_name||'Anônimo'), inline: true },
             { name: '📧 Email', value: (user_email||'Não informado'), inline: true },
@@ -940,7 +941,8 @@ const server = http.createServer(async (req, res) => {
                 { name: 'Script', value: script_name, inline: true },
                 { name: 'Preço', value: price, inline: true },
                 { name: 'Comprador', value: user_name||'Anônimo', inline: true },
-                { name: 'Email', value: user_email||'Não informado', inline: true }
+                { name: 'Email', value: user_email||'Não informado', inline: true },
+                ...(coupon_code ? [{ name: 'Cupom', value: coupon_code, inline: true }] : [])
               ],
               footer: { text: 'ZK Studio — Sistema de Tickets' },
               timestamp: new Date().toISOString()
