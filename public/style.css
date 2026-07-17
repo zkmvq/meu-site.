@@ -268,7 +268,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
 }
 .feature-card:hover { border-color:rgba(26,86,219,0.45); transform:translateY(-5px); box-shadow:0 14px 40px rgba(26,86,219,0.12); }
 .feature-card:hover::before { opacity:1; }
-.feature-icon { font-size:2.4rem; margin-bottom:1rem; display:block; }
+.feature-icon { margin-bottom:1rem; display:flex; justify-content:center; color:var(--blue); }
 .feature-card h3 { font-size:1rem; font-weight:700; color:var(--white); margin-bottom:0.6rem; }
 .feature-card p { color:var(--text-muted); font-size:0.85rem; line-height:1.65; }
 
@@ -320,7 +320,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font); overflo
   color:#fff; font-size:0.62rem; font-weight:700; letter-spacing:0.12em;
   padding:0.25rem 0.7rem; border-radius:5px; margin-bottom:1rem; width:fit-content;
 }
-.card-icon { font-size:2.4rem; margin-bottom:0.9rem; }
+.card-icon { margin-bottom:0.9rem; color:var(--blue); display:flex; justify-content:center; }
 .produto-card h3 { font-size:1.08rem; font-weight:700; margin-bottom:0.5rem; color:var(--white); }
 .produto-card p  { color:var(--text-muted); font-size:0.87rem; line-height:1.65; margin-bottom:1.2rem; flex:1; }
 .card-tags { display:flex; gap:0.45rem; flex-wrap:wrap; margin-bottom:1.4rem; }
