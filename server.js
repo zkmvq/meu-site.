@@ -489,11 +489,12 @@ const server = http.createServer(async (req, res) => {
             const clienteRoleId = cfg2.discord?.cliente_role_id;
             if (clienteRoleId && guildId) {
               try {
-                const guild = discordClient.guilds.cache.get(guildId);
-                if (guild) {
-                  const member = await guild.members.fetch(String(userDiscordId));
-                  if (member) await member.roles.add(clienteRoleId);
-                }
+                const token2 = process.env.BOT_TOKEN || cfg2.discord?.bot_token;
+                const roleRes = await fetch('https://discord.com/api/v10/guilds/' + guildId + '/members/' + String(userDiscordId) + '/roles/' + clienteRoleId, {
+                  method: 'PUT',
+                  headers: { Authorization: 'Bot ' + token2 }
+                });
+                console.log('[ROLE] Status:', roleRes.status, roleRes.ok ? 'OK' : await roleRes.text());
               } catch(roleErr) {
                 console.log('[ROLE] Erro ao atribuir cargo:', roleErr.message);
               }
@@ -1000,11 +1001,12 @@ const server = http.createServer(async (req, res) => {
             const clienteRoleId = cfg.discord?.cliente_role_id;
             if (clienteRoleId && guildId) {
               try {
-                const guild = discordClient.guilds.cache.get(guildId);
-                if (guild) {
-                  const member = await guild.members.fetch(buyerDiscordId);
-                  if (member) await member.roles.add(clienteRoleId);
-                }
+                const token2 = process.env.BOT_TOKEN || cfg.discord?.bot_token;
+                const roleRes = await fetch('https://discord.com/api/v10/guilds/' + guildId + '/members/' + buyerDiscordId + '/roles/' + clienteRoleId, {
+                  method: 'PUT',
+                  headers: { Authorization: 'Bot ' + token2 }
+                });
+                console.log('[ROLE] Status:', roleRes.status, roleRes.ok ? 'OK' : await roleRes.text());
               } catch(roleErr) {
                 console.log('[ROLE] Erro ao atribuir cargo:', roleErr.message);
               }
