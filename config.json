@@ -10,7 +10,8 @@
     "bot_token": "USAR_BOT_TOKEN_NA_VARIÁVEL_DE_AMBIENTE",
     "ticket_guild_id": "1520550763850371175",
     "ticket_category_id": "1522437463036137602",
-    "feedback_channel_id": "1522437498842644601"
+    "feedback_channel_id": "1522437498842644601",
+    "cliente_role_id": "1473070694425301205"
   },
   "products": {
     "PAINEL ADMIN": { "download": "https://discord.gg/9BFJTzExWK" },

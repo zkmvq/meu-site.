@@ -484,6 +484,20 @@ const server = http.createServer(async (req, res) => {
             }
 
             await dmUser.send({ embeds: [dmEmbed] });
+
+            // Atribui cargo "Cliente"
+            const clienteRoleId = cfg2.discord?.cliente_role_id;
+            if (clienteRoleId && guildId) {
+              try {
+                const guild = discordClient.guilds.cache.get(guildId);
+                if (guild) {
+                  const member = await guild.members.fetch(String(userDiscordId));
+                  if (member) await member.roles.add(clienteRoleId);
+                }
+              } catch(roleErr) {
+                console.log('[ROLE] Erro ao atribuir cargo:', roleErr.message);
+              }
+            }
           }
         } catch(dmErr) {
           console.log('[DM] Não foi possível enviar DM:', dmErr.message);
@@ -981,6 +995,20 @@ const server = http.createServer(async (req, res) => {
             }
 
             await dmUser.send({ embeds: [dmEmbed] });
+
+            // Atribui cargo "Cliente"
+            const clienteRoleId = cfg.discord?.cliente_role_id;
+            if (clienteRoleId && guildId) {
+              try {
+                const guild = discordClient.guilds.cache.get(guildId);
+                if (guild) {
+                  const member = await guild.members.fetch(buyerDiscordId);
+                  if (member) await member.roles.add(clienteRoleId);
+                }
+              } catch(roleErr) {
+                console.log('[ROLE] Erro ao atribuir cargo:', roleErr.message);
+              }
+            }
           }
         } catch(dmErr) {
           console.log('[DM] Não foi possível enviar DM:', dmErr.message);
