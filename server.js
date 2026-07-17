@@ -14,7 +14,7 @@ const CONFIG_FILE = path.join(__dirname, 'config.json');
 const { Pool } = require('pg');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
-const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionsBitField, Partials, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
 const JWT_SECRET   = process.env.JWT_SECRET || 'zkstudio_secret_2025';
 const DB_URL       = process.env.DATABASE_URL || 'postgresql://postgres:MmoyArqrUmaytjQzcEVwmDGKtBitVqXY@postgres.railway.internal:5432/railway';
@@ -126,6 +126,67 @@ function startBot() {
       setTimeout(async () => {
         try { await channel.delete(); } catch(_){}
       }, 10000);
+    }
+
+    if (customId === 'ticket_coupon') {
+      const modal = new ModalBuilder()
+        .setCustomId('coupon_modal')
+        .setTitle('Cupom de Desconto');
+      const couponInput = new TextInputBuilder()
+        .setCustomId('coupon_code')
+        .setLabel('Digite o código do cupom')
+        .setPlaceholder('Ex: ZK10, DESCONTO20...')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setMaxLength(30);
+      modal.addComponents(new ActionRowBuilder().addComponents(couponInput));
+      await interaction.showModal(modal);
+    }
+
+    if (customId === 'coupon_modal') {
+      const couponCode = interaction.fields.getTextInputValue('coupon_code').toUpperCase().trim();
+      try {
+        const couponR = await pool.query("SELECT * FROM coupons WHERE code=$1 AND active=true", [couponCode]);
+        if (!couponR.rows.length) {
+          return interaction.reply({ content: '❌ Cupom **' + couponCode + '** não encontrado ou inativo.', ephemeral: true });
+        }
+        const coupon = couponR.rows[0];
+        if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
+          return interaction.reply({ content: '❌ Cupom **' + couponCode + '** expirado.', ephemeral: true });
+        }
+        if (coupon.max_uses > 0 && coupon.used_count >= coupon.max_uses) {
+          return interaction.reply({ content: '❌ Cupom **' + couponCode + '** atingiu o limite de uso.', ephemeral: true });
+        }
+
+        const topic = channel.topic || '';
+        const parts = topic.split(' | ');
+        const productName = parts[0]?.replace('compra','').trim() || '';
+        const buyerName = parts[1]?.trim() || 'Comprador';
+
+        let discountText = '';
+        if (coupon.discount_type === 'percent') {
+          discountText = coupon.discount_value + '% de desconto';
+        } else {
+          discountText = 'R$ ' + Number(coupon.discount_value).toFixed(2) + ' de desconto';
+        }
+
+        const couponEmbed = new EmbedBuilder()
+          .setColor(0x10B981)
+          .setTitle('🏷️ Cupom Aplicado!')
+          .setDescription('O cupom **' + couponCode + '** foi aplicado com sucesso.\n\n**Desconto:** ' + discountText + '\n**Produto:** ' + productName + '\n**Comprador:** ' + buyerName)
+          .addFields(
+            { name: '📋 Código', value: '`' + couponCode + '`', inline: true },
+            { name: '💰 Desconto', value: '`' + discountText + '`', inline: true },
+            { name: '👤 Aplicado por', value: '<@' + user.id + '>', inline: true }
+          )
+          .setFooter({ text: 'ZK Studio — Cupom de Desconto' })
+          .setTimestamp();
+
+        await pool.query("UPDATE coupons SET used_count=used_count+1 WHERE code=$1", [couponCode]);
+        await interaction.reply({ embeds: [couponEmbed] });
+      } catch(e) {
+        await interaction.reply({ content: '❌ Erro ao validar cupom: ' + e.message, ephemeral: true });
+      }
     }
   });
 
@@ -829,7 +890,7 @@ const server = http.createServer(async (req, res) => {
 
   // ── TICKET DISCORD ──────────────────────────────────────────────────
   if (urlPath==='/ticket/create'&&req.method==='POST') {
-    const {script_name, price, user_name, user_email, coupon_code} = await readBody(req);
+    const {script_name, price, user_name, user_email} = await readBody(req);
     if (!script_name||!price) return jsonRes(res,400,{error:'Dados obrigatórios.'});
     try {
       const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE,'utf8'));
@@ -891,7 +952,6 @@ const server = http.createServer(async (req, res) => {
             { name: '📦 Produto', value: '```' + script_name + '```', inline: true },
             { name: '💰 Valor', value: '```' + price + '```', inline: true },
             { name: '📊 Status', value: '🔴 Aguardando atendimento', inline: true },
-            ...(coupon_code ? [{ name: '🎟️ Cupom', value: '```' + coupon_code + '```', inline: true }] : []),
             { name: '\u200b', value: '\u200b', inline: false },
             { name: '👤 Comprador', value: (user_name||'Anônimo'), inline: true },
             { name: '📧 Email', value: (user_email||'Não informado'), inline: true },
@@ -905,6 +965,7 @@ const server = http.createServer(async (req, res) => {
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder().setCustomId('ticket_claim').setLabel('Assumir').setEmoji('👋').setStyle(ButtonStyle.Primary),
           new ButtonBuilder().setCustomId('ticket_notify').setLabel('Notificar').setEmoji('🔔').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId('ticket_coupon').setLabel('Cupom').setEmoji('🎟️').setStyle(ButtonStyle.Success),
           new ButtonBuilder().setCustomId('ticket_close').setLabel('Fechar').setEmoji('🔒').setStyle(ButtonStyle.Danger)
         );
 
@@ -941,8 +1002,7 @@ const server = http.createServer(async (req, res) => {
                 { name: 'Script', value: script_name, inline: true },
                 { name: 'Preço', value: price, inline: true },
                 { name: 'Comprador', value: user_name||'Anônimo', inline: true },
-                { name: 'Email', value: user_email||'Não informado', inline: true },
-                ...(coupon_code ? [{ name: 'Cupom', value: coupon_code, inline: true }] : [])
+                { name: 'Email', value: user_email||'Não informado', inline: true }
               ],
               footer: { text: 'ZK Studio — Sistema de Tickets' },
               timestamp: new Date().toISOString()

@@ -25,7 +25,6 @@
           });
           const d = await r.json();
           if (d.ok && d.url) {
-            if (buy.coupon_code) { fetch('/coupon/use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: buy.coupon_code }) }); }
             showToast('Ticket criado! Abrindo Discord...');
             setTimeout(() => { window.open(d.url, '_blank'); }, 500);
           } else {
@@ -548,118 +547,18 @@ function enviarMensagem(e) {
 
 // ── BUY MODAL (DISCORD TICKET) ────────────────────────────────────────
 let buyScriptName = '', buyScriptPrice = '';
-let appliedCoupon = null;
-
-function parsePrice(priceStr) {
-  return parseFloat(priceStr.replace('R$','').replace('.','').replace(',','.').trim()) || 0;
-}
-
-function formatPrice(val) {
-  return 'R$ ' + val.toFixed(2).replace('.',',');
-}
 
 function openBuyModal(name, price) {
   buyScriptName = name;
   buyScriptPrice = price;
-  appliedCoupon = null;
   document.getElementById('buyModalInfo').textContent = name + ' — ' + price;
   document.getElementById('buyName').value = '';
   document.getElementById('buyEmail').value = '';
-  document.getElementById('buyCouponInput').value = '';
-  document.getElementById('couponMessage').style.display = 'none';
-  document.getElementById('priceSummary').style.display = 'none';
-  document.getElementById('applyCouponBtn').disabled = false;
-  document.getElementById('applyCouponBtn').textContent = 'Aplicar';
   document.getElementById('buyModal').classList.add('active');
 }
 
 function closeBuyModal() {
   document.getElementById('buyModal').classList.remove('active');
-}
-
-async function applyCoupon() {
-  const input = document.getElementById('buyCouponInput');
-  const msgEl = document.getElementById('couponMessage');
-  const btn = document.getElementById('applyCouponBtn');
-  const code = input.value.trim().toUpperCase();
-  if (!code) return;
-
-  btn.disabled = true;
-  btn.textContent = '...';
-
-  try {
-    const r = await fetch('/coupon/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
-    });
-    const d = await r.json();
-    if (d.ok && d.coupon) {
-      appliedCoupon = d.coupon;
-      msgEl.style.display = 'block';
-      msgEl.style.color = '#10b981';
-      const discText = d.coupon.discount_type === 'percent'
-        ? d.coupon.discount_value + '% de desconto'
-        : formatPrice(d.coupon.discount_value) + ' de desconto';
-      msgEl.textContent = '✓ Cupom aplicado: ' + discText;
-      input.disabled = true;
-      btn.textContent = 'Remover';
-      btn.onclick = removeCoupon;
-
-      const original = parsePrice(buyScriptPrice);
-      let discount = 0;
-      if (d.coupon.discount_type === 'percent') {
-        discount = original * (d.coupon.discount_value / 100);
-      } else {
-        discount = d.coupon.discount_value;
-      }
-      const final_ = Math.max(0, original - discount);
-
-      document.getElementById('priceOriginal').textContent = buyScriptPrice;
-      document.getElementById('priceDiscount').textContent = '- ' + formatPrice(discount);
-      document.getElementById('priceDiscountRow').style.display = discount > 0 ? 'flex' : 'none';
-      document.getElementById('priceFinal').textContent = formatPrice(final_);
-      document.getElementById('priceSummary').style.display = 'block';
-    } else {
-      msgEl.style.display = 'block';
-      msgEl.style.color = '#ef4444';
-      msgEl.textContent = '✕ ' + (d.error || 'Cupom inválido.');
-      btn.disabled = false;
-      btn.textContent = 'Aplicar';
-    }
-  } catch(e) {
-    msgEl.style.display = 'block';
-    msgEl.style.color = '#ef4444';
-    msgEl.textContent = '✕ Erro ao validar cupom.';
-    btn.disabled = false;
-    btn.textContent = 'Aplicar';
-  }
-}
-
-function removeCoupon() {
-  appliedCoupon = null;
-  const input = document.getElementById('buyCouponInput');
-  const btn = document.getElementById('applyCouponBtn');
-  const msgEl = document.getElementById('couponMessage');
-  input.value = '';
-  input.disabled = false;
-  msgEl.style.display = 'none';
-  document.getElementById('priceSummary').style.display = 'none';
-  btn.disabled = false;
-  btn.textContent = 'Aplicar';
-  btn.onclick = applyCoupon;
-}
-
-function getFinalPrice() {
-  const original = parsePrice(buyScriptPrice);
-  if (!appliedCoupon) return buyScriptPrice;
-  let discount = 0;
-  if (appliedCoupon.discount_type === 'percent') {
-    discount = original * (appliedCoupon.discount_value / 100);
-  } else {
-    discount = appliedCoupon.discount_value;
-  }
-  return formatPrice(Math.max(0, original - discount));
 }
 
 async function submitBuy() {
@@ -670,11 +569,9 @@ async function submitBuy() {
   if (!name) { nameEl.style.borderColor = '#ef4444'; nameEl.focus(); return; }
   nameEl.style.borderColor = '';
 
-  const finalPrice = getFinalPrice();
-
   const user = localStorage.getItem('zk_user');
   if (!user) {
-    const pending = { script_name: buyScriptName, price: finalPrice, user_name: name, user_email: email, coupon_code: appliedCoupon ? appliedCoupon.code : null };
+    const pending = { script_name: buyScriptName, price: buyScriptPrice, user_name: name, user_email: email };
     localStorage.setItem('zk_pending_buy', JSON.stringify(pending));
     showToast('Redirecionando para login Discord...');
     setTimeout(() => { window.location.href = '/auth/discord'; }, 800);
@@ -689,13 +586,10 @@ async function submitBuy() {
     const r = await fetch('/ticket/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ script_name: buyScriptName, price: finalPrice, user_name: name, user_email: email, coupon_code: appliedCoupon ? appliedCoupon.code : null })
+      body: JSON.stringify({ script_name: buyScriptName, price: buyScriptPrice, user_name: name, user_email: email })
     });
     const d = await r.json();
     if (d.ok && d.url) {
-      if (appliedCoupon) {
-        fetch('/coupon/use', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: appliedCoupon.code }) });
-      }
       closeBuyModal();
       showToast('Abrindo Discord...');
       window.open(d.url, '_blank');
