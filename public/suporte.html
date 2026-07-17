@@ -5,35 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZK Studio — Painel de Suporte</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
-    :root{--blue:#1A56DB;--blue-light:#4F8EF7;--blue-bright:#60A5FA;--blue-dark:#1239A8;--bg:#03081C;--bg2:#050C24;--bg3:#07102E;--card:#081230;--card-border:#162050;--text:#CBD5E1;--text-muted:#64748B;--white:#F1F5FF;--green:#22C55E;--red:#EF4444;--yellow:#EAB308;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;}
+    :root{
+      --blue:#1A56DB;--blue-light:#4F8EF7;--blue-bright:#60A5FA;
+      --blue-dark:#1239A8;--bg:#03081C;--bg2:#050C24;--bg3:#07102E;
+      --card:rgba(11,21,53,0.55);--card-solid:#081230;--card-border:rgba(26,86,219,0.15);
+      --text:#CBD5E1;--text-muted:#64748B;--white:#F1F5FF;
+      --green:#22C55E;--red:#EF4444;--yellow:#EAB308;
+      --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+    }
     *{margin:0;padding:0;box-sizing:border-box;}
     body{background:var(--bg);color:var(--text);font-family:var(--font);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-    .bg-glow{position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);z-index:0;}
-    .bg-glow-1{width:600px;height:600px;background:rgba(26,86,219,0.08);top:-200px;left:-200px;}
-    .bg-glow-2{width:500px;height:500px;background:rgba(26,86,219,0.06);bottom:-150px;right:-150px;}
+    *{cursor:none !important;}
+    #cursor-dot{position:fixed;top:0;left:0;width:7px;height:7px;background:#fff;border-radius:50%;pointer-events:none;z-index:999999;transform:translate(-50%,-50%);transition:width 0.15s,height 0.15s,background 0.15s;}
+    body.cursor-hover #cursor-dot{width:10px;height:10px;background:var(--blue-bright);}
+    body.cursor-click #cursor-dot{width:5px;height:5px;}
 
-    .navbar{background:rgba(3,8,28,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(26,86,219,0.2);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:60px;flex-shrink:0;z-index:100;}
-    .navbar img{height:38px;}
+    .bg-glow{position:fixed;border-radius:50%;pointer-events:none;filter:blur(140px);z-index:0;}
+    .bg-glow-1{width:700px;height:700px;background:rgba(26,86,219,0.07);top:-250px;left:-250px;}
+    .bg-glow-2{width:500px;height:500px;background:rgba(26,86,219,0.05);bottom:-200px;right:-200px;}
+
+    /* ── NAVBAR ── */
+    .navbar{
+      background:rgba(3,8,28,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+      border-bottom:1px solid rgba(26,86,219,0.12);
+      padding:0 2rem;display:flex;align-items:center;gap:1rem;height:60px;flex-shrink:0;z-index:100;
+      position:relative;
+    }
+    .navbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.15),transparent);}
+    .navbar img{height:38px;filter:drop-shadow(0 0 10px rgba(26,86,219,0.3));}
     .navbar-title{font-size:0.85rem;font-weight:700;color:var(--white);margin-left:0.5rem;}
-    .navbar-badge{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);font-size:0.65rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px;letter-spacing:0.1em;}
+    .navbar-badge{
+      background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.08));
+      color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);
+      font-size:0.65rem;font-weight:700;padding:0.25rem 0.7rem;border-radius:20px;
+      letter-spacing:0.1em;backdrop-filter:blur(6px);
+    }
     .navbar-right{margin-left:auto;display:flex;align-items:center;gap:1rem;}
     .nav-user{display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;color:var(--text-muted);}
-    .nav-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;}
+    .nav-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;overflow:hidden;border:2px solid rgba(26,86,219,0.3);}
     .nav-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;}
-    .btn-logout{background:none;border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
-    .btn-logout:hover{background:rgba(239,68,68,0.1);}
-    .btn-back{background:none;border:1px solid rgba(26,86,219,0.3);color:var(--blue-bright);padding:0.3rem 0.8rem;border-radius:6px;font-size:0.75rem;cursor:pointer;font-family:var(--font);text-decoration:none;transition:all 0.2s;}
-    .btn-back:hover{background:rgba(26,86,219,0.1);}
+    .btn-logout{
+      background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.25);color:#FCA5A5;
+      padding:0.35rem 0.9rem;border-radius:8px;font-size:0.75rem;cursor:pointer;
+      font-family:var(--font);font-weight:600;transition:all 0.25s;
+    }
+    .btn-logout:hover{background:rgba(239,68,68,0.15);transform:translateY(-1px);}
 
     .layout{display:flex;flex:1;overflow:hidden;position:relative;z-index:1;}
-    .sidebar{width:220px;background:var(--bg2);border-right:1px solid rgba(26,86,219,0.12);padding:1.5rem 0;flex-shrink:0;}
-    .sidebar-item{display:flex;align-items:center;gap:0.7rem;padding:0.7rem 1.5rem;color:var(--text-muted);font-size:0.83rem;font-weight:600;cursor:pointer;transition:all 0.2s;border-left:2px solid transparent;}
+
+    /* ── SIDEBAR ── */
+    .sidebar{
+      width:230px;background:rgba(5,12,36,0.8);backdrop-filter:blur(16px);
+      border-right:1px solid rgba(26,86,219,0.1);padding:1.2rem 0;flex-shrink:0;
+      display:flex;flex-direction:column;
+    }
+    .sidebar-item{
+      display:flex;align-items:center;gap:0.7rem;padding:0.7rem 1.5rem;
+      color:var(--text-muted);font-size:0.82rem;font-weight:600;cursor:pointer;
+      transition:all 0.25s;border-left:2px solid transparent;position:relative;
+    }
     .sidebar-item:hover{color:var(--blue-bright);background:rgba(26,86,219,0.06);}
-    .sidebar-item.active{color:var(--blue-bright);background:rgba(26,86,219,0.08);border-left-color:var(--blue-bright);}
-    .sidebar-item .si-icon{font-size:1.1rem;flex-shrink:0;}
-    .sidebar-sep{height:1px;background:rgba(26,86,219,0.1);margin:0.8rem 1.5rem;}
+    .sidebar-item.active{
+      color:var(--blue-bright);background:rgba(26,86,219,0.08);border-left-color:var(--blue-bright);
+    }
+    .sidebar-item.active::after{
+      content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+      width:2px;height:60%;background:var(--blue-bright);border-radius:0 2px 2px 0;
+      box-shadow:0 0 8px rgba(96,165,250,0.5);
+    }
+    .sidebar-item svg{width:18px;height:18px;flex-shrink:0;opacity:0.7;}
+    .sidebar-item.active svg,.sidebar-item:hover svg{opacity:1;}
+    .sidebar-sep{height:1px;background:linear-gradient(90deg,transparent,rgba(26,86,219,0.15),transparent);margin:0.8rem 1.5rem;}
+    .sidebar-footer{margin-top:auto;padding:1rem 1.5rem;border-top:1px solid rgba(26,86,219,0.1);}
+    .sidebar-footer-text{font-size:0.65rem;color:var(--text-muted);opacity:0.5;text-align:center;}
+    .sidebar-footer-text a{color:var(--blue-bright);text-decoration:none;}
 
     .content{flex:1;overflow-y:auto;padding:2rem;}
     .content::-webkit-scrollbar{width:4px;}
@@ -41,63 +88,153 @@
     .page{display:none;}
     .page.active{display:block;}
 
-    .page-title{font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:1.5rem;display:flex;align-items:center;gap:0.7rem;}
-    .page-title .pt-icon{font-size:1.4rem;}
+    /* ── PAGE HEADER ── */
+    .page-header{display:flex;align-items:center;gap:0.8rem;margin-bottom:1.8rem;}
+    .page-icon{
+      width:42px;height:42px;border-radius:12px;
+      background:linear-gradient(135deg,rgba(26,86,219,0.18),rgba(26,86,219,0.04));
+      border:1px solid rgba(26,86,219,0.2);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 16px rgba(26,86,219,0.12);
+    }
+    .page-icon svg{width:20px;height:20px;color:var(--blue-bright);}
+    .page-title{font-size:1.3rem;font-weight:800;color:var(--white);letter-spacing:-0.01em;}
 
+    /* ── STATS ── */
     .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;}
-    .stat-card{background:var(--card);border:1px solid var(--card-border);border-radius:12px;padding:1.2rem 1.5rem;}
-    .stat-card .sc-num{font-size:2rem;font-weight:900;color:var(--blue-bright);font-family:var(--mono);}
-    .stat-card .sc-label{font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.3rem;}
+    .stat-card{
+      background:var(--card);backdrop-filter:blur(12px);
+      border:1px solid var(--card-border);border-radius:14px;
+      padding:1.3rem 1.5rem;position:relative;overflow:hidden;
+      transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .stat-card:hover{border-color:rgba(26,86,219,0.35);transform:translateY(-3px);box-shadow:0 8px 30px rgba(26,86,219,0.1);}
+    .stat-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(26,86,219,0.06),transparent 70%);pointer-events:none;}
+    .stat-card .sc-num{font-size:2rem;font-weight:900;color:var(--blue-bright);font-family:var(--mono);line-height:1;}
+    .stat-card .sc-label{font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:0.4rem;font-weight:500;}
 
-    .table-wrap{background:var(--card);border:1px solid var(--card-border);border-radius:14px;overflow:hidden;margin-bottom:1.5rem;}
+    /* ── TABLE ── */
+    .table-wrap{
+      background:var(--card);backdrop-filter:blur(12px);
+      border:1px solid var(--card-border);border-radius:14px;overflow:hidden;margin-bottom:1.5rem;
+      position:relative;
+    }
+    .table-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.15),transparent);z-index:1;}
     table{width:100%;border-collapse:collapse;}
-    th{background:var(--bg3);padding:0.75rem 1rem;font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;text-align:left;border-bottom:1px solid var(--card-border);}
-    td{padding:0.85rem 1rem;font-size:0.83rem;border-bottom:1px solid rgba(22,32,80,0.5);vertical-align:middle;}
+    th{
+      background:rgba(7,16,46,0.8);padding:0.75rem 1rem;font-size:0.7rem;font-weight:700;
+      color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;text-align:left;
+      border-bottom:1px solid rgba(26,86,219,0.12);
+    }
+    td{padding:0.85rem 1rem;font-size:0.82rem;border-bottom:1px solid rgba(22,32,80,0.4);vertical-align:middle;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:rgba(26,86,219,0.04);}
     .td-name{font-weight:600;color:var(--white);}
     .td-mono{font-family:var(--mono);font-size:0.75rem;color:var(--text-muted);}
 
-    .badge{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.68rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:20px;}
-    .badge-green{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
-    .badge-blue{background:rgba(26,86,219,0.12);color:var(--blue-bright);border:1px solid rgba(26,86,219,0.25);}
-    .badge-red{background:rgba(239,68,68,0.12);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25);}
-    .badge-yellow{background:rgba(234,179,8,0.12);color:var(--yellow);border:1px solid rgba(234,179,8,0.25);}
+    /* ── BADGES ── */
+    .badge{display:inline-flex;align-items:center;gap:0.3rem;font-size:0.68rem;font-weight:700;padding:0.2rem 0.65rem;border-radius:20px;}
+    .badge-green{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
+    .badge-blue{background:rgba(26,86,219,0.1);color:var(--blue-bright);border:1px solid rgba(26,86,219,0.25);}
+    .badge-red{background:rgba(239,68,68,0.1);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25);}
+    .badge-yellow{background:rgba(234,179,8,0.1);color:var(--yellow);border:1px solid rgba(234,179,8,0.25);}
 
-    .form-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem;}
-    .form-card h3{font-size:0.9rem;font-weight:700;color:var(--white);margin-bottom:1rem;}
-    .form-row{display:flex;gap:0.8rem;flex-wrap:wrap;}
-    .form-input{flex:1;min-width:200px;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;transition:border-color 0.2s;}
-    .form-input:focus{outline:none;border-color:var(--blue);}
-    .form-input::placeholder{color:var(--text-muted);}
-    .btn-primary{background:var(--blue);color:#fff;border:none;padding:0.65rem 1.3rem;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;white-space:nowrap;}
-    .btn-primary:hover{background:var(--blue-dark);box-shadow:0 0 20px rgba(26,86,219,0.4);}
-    .btn-danger{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.3);padding:0.4rem 0.9rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.2s;}
-    .btn-danger:hover{background:rgba(239,68,68,0.25);}
+    /* ── FORMS ── */
+    .form-card{
+      background:var(--card);backdrop-filter:blur(12px);
+      border:1px solid var(--card-border);border-radius:14px;
+      padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;
+    }
+    .form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(96,165,250,0.12),transparent);}
+    .form-card h3{font-size:0.9rem;font-weight:700;color:var(--white);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;}
+    .form-card h3 svg{width:16px;height:16px;color:var(--blue-bright);opacity:0.7;}
+    .form-row{display:flex;gap:0.7rem;flex-wrap:wrap;}
+    .form-input{
+      flex:1;min-width:180px;background:rgba(5,12,36,0.7);border:1px solid rgba(26,86,219,0.15);
+      border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-family:var(--font);
+      font-size:0.85rem;transition:all 0.25s;backdrop-filter:blur(6px);
+    }
+    .form-input:focus{outline:none;border-color:rgba(26,86,219,0.45);box-shadow:0 0 0 3px rgba(26,86,219,0.1);}
+    .form-input::placeholder{color:var(--text-muted);opacity:0.6;}
+
+    .btn-primary{
+      background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;
+      padding:0.7rem 1.4rem;border-radius:10px;font-size:0.82rem;font-weight:700;
+      cursor:pointer;font-family:var(--font);transition:all 0.25s;white-space:nowrap;
+      box-shadow:0 4px 16px rgba(26,86,219,0.25);
+    }
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(26,86,219,0.35);}
+    .btn-danger{
+      background:rgba(239,68,68,0.08);color:#FCA5A5;
+      border:1px solid rgba(239,68,68,0.25);
+      padding:0.4rem 0.9rem;border-radius:8px;font-size:0.75rem;font-weight:700;
+      cursor:pointer;font-family:var(--font);transition:all 0.25s;
+    }
+    .btn-danger:hover{background:rgba(239,68,68,0.18);transform:translateY(-1px);}
     .btn-sm{padding:0.35rem 0.8rem;font-size:0.75rem;}
+    .btn-green{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.25);padding:0.4rem 0.9rem;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:all 0.25s;}
+    .btn-green:hover{background:rgba(34,197,94,0.18);transform:translateY(-1px);}
 
-    .msg{padding:0.7rem 1rem;border-radius:8px;font-size:0.82rem;margin-bottom:1rem;display:none;}
-    .msg.show{display:block;}
-    .msg.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#86EFAC;}
-    .msg.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#FCA5A5;}
+    .msg{padding:0.7rem 1rem;border-radius:10px;font-size:0.82rem;margin-bottom:1rem;display:none;backdrop-filter:blur(8px);}
+    .msg.show{display:block;animation:fadeSlideUp 0.3s ease-out;}
+    .msg.success{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#86EFAC;}
+    .msg.error{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#FCA5A5;}
+
+    @keyframes fadeSlideUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+    @keyframes dotPulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
 
     .loading{text-align:center;padding:3rem;color:var(--text-muted);font-size:0.9rem;}
-    @keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
 
-    .log-entry{padding:0.7rem 1rem;border-bottom:1px solid rgba(22,32,80,0.3);display:flex;align-items:center;gap:0.8rem;font-size:0.82rem;}
+    /* ── LOG ENTRIES ── */
+    .log-entry{
+      padding:0.75rem 1rem;border-bottom:1px solid rgba(22,32,80,0.3);
+      display:flex;align-items:center;gap:0.8rem;font-size:0.82rem;
+      transition:background 0.2s;
+    }
     .log-entry:last-child{border-bottom:none;}
+    .log-entry:hover{background:rgba(26,86,219,0.04);}
     .log-time{font-family:var(--mono);font-size:0.72rem;color:var(--text-muted);white-space:nowrap;}
-    .log-icon{font-size:1rem;}
+    .log-icon{
+      width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+      background:rgba(26,86,219,0.08);border:1px solid rgba(26,86,219,0.15);flex-shrink:0;
+    }
+    .log-icon svg{width:14px;height:14px;color:var(--blue-bright);}
     .log-text{flex:1;color:var(--text);}
     .log-text strong{color:var(--white);}
 
+    /* ── BLOCKED ── */
     #blocked{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:1rem;text-align:center;padding:2rem;}
-    #blocked .bl-icon{font-size:4rem;}
-    #blocked h2{color:var(--white);font-size:1.3rem;}
+    #blocked .bl-icon{
+      width:80px;height:80px;border-radius:20px;
+      background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.04));
+      border:1px solid rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;
+    }
+    #blocked .bl-icon svg{width:36px;height:36px;color:#FCA5A5;}
+    #blocked h2{color:var(--white);font-size:1.3rem;font-weight:800;}
     #blocked p{color:var(--text-muted);font-size:0.88rem;}
+    #blocked .btn-enter{
+      display:inline-flex;align-items:center;gap:0.6rem;
+      background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+      color:#fff;border:none;padding:0.8rem 2rem;border-radius:10px;
+      font-size:0.88rem;font-weight:700;cursor:pointer;font-family:var(--font);
+      text-decoration:none;transition:all 0.3s;box-shadow:0 4px 20px rgba(26,86,219,0.3);
+      margin-top:0.5rem;
+    }
+    #blocked .btn-enter:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(26,86,219,0.4);}
+
+    @media(max-width:768px){
+      .sidebar{width:60px;padding:0.8rem 0;}
+      .sidebar-item{padding:0.7rem;justify-content:center;}
+      .sidebar-item span:last-child,.sidebar-footer{display:none;}
+      .sidebar-item svg{margin:0;}
+      .form-row{flex-direction:column;}
+      .form-input{min-width:100%;}
+    }
   </style>
 </head>
 <body>
+<div id="cursor-dot"></div>
 <div class="bg-glow bg-glow-1"></div>
 <div class="bg-glow bg-glow-2"></div>
 
@@ -115,60 +252,78 @@
 </nav>
 
 <div id="blocked">
-  <div class="bl-icon">🔒</div>
+  <div class="bl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
   <h2>Acesso Restrito</h2>
   <p>Este painel é exclusivo para staff autorizado.</p>
-  <a href="/auth.html" style="display:inline-flex;align-items:center;gap:0.6rem;background:var(--blue);color:#fff;border:none;padding:0.8rem 1.8rem;border-radius:9px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:var(--font);text-decoration:none;">Entrar</a>
+  <a href="/auth.html" class="btn-enter">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Entrar
+  </a>
 </div>
 
 <div class="layout" id="mainLayout" style="display:none">
   <div class="sidebar">
     <div class="sidebar-item active" onclick="showPage('tickets')" data-page="tickets">
-      <span class="si-icon">💬</span> Tickets
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Tickets</span>
     </div>
     <div class="sidebar-item" onclick="showPage('transcript')" data-page="transcript">
-      <span class="si-icon">📋</span> Transcript
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>Transcript</span>
     </div>
     <div class="sidebar-item" onclick="showPage('logs')" data-page="logs">
-      <span class="si-icon">📊</span> Logs
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Logs</span>
     </div>
     <div class="sidebar-sep"></div>
     <div class="sidebar-item" id="sidebarStaff" onclick="showPage('staff')" data-page="staff" style="display:none">
-      <span class="si-icon">🛡️</span> Gerenciar Staff
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Staff</span>
     </div>
     <div class="sidebar-item" id="sidebarCupons" onclick="showPage('cupons')" data-page="cupons" style="display:none">
-      <span class="si-icon">🏷️</span> Cupons
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span>Cupons</span>
     </div>
     <div class="sidebar-item" id="sidebarPedidos" onclick="showPage('pedidos')" data-page="pedidos">
-      <span class="si-icon">📦</span> Pedidos
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Pedidos</span>
     </div>
     <div class="sidebar-item" onclick="window.location.href='/staff.html'">
-      <span class="si-icon">⚙️</span> Painel Admin
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Admin</span>
     </div>
     <div class="sidebar-item" onclick="window.location.href='/'">
-      <span class="si-icon">🌐</span> Ver Site
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span>Ver Site</span>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-text">Desenvolvido por<br><a href="/">ZK Studio</a></div>
     </div>
   </div>
 
   <div class="content">
-    <!-- TICKETS (CHAT ATIVO) -->
+    <!-- TICKETS -->
     <div class="page active" id="page-tickets">
-      <div class="page-title"><span class="pt-icon">💬</span> Tickets Ativos</div>
+      <div class="page-header">
+        <div class="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <div class="page-title">Tickets Ativos</div>
+      </div>
       <div class="stats-row" id="ticketStats"></div>
       <div style="display:flex;gap:1.5rem;min-height:70vh;">
         <div style="width:300px;flex-shrink:0;">
           <div class="table-wrap" style="height:100%;display:flex;flex-direction:column;">
-            <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--card-border);font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;display:flex;justify-content:space-between;">
+            <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--card-border);font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;display:flex;justify-content:space-between;align-items:center;">
               <span>Conversas</span>
-              <span id="sessionCount">0</span>
+              <span id="sessionCount" style="background:rgba(26,86,219,0.12);color:var(--blue-bright);padding:0.15rem 0.5rem;border-radius:10px;font-size:0.68rem;">0</span>
             </div>
             <div id="sessionList" style="flex:1;overflow-y:auto;padding:0.5rem;"></div>
           </div>
         </div>
         <div style="flex:1;display:flex;flex-direction:column;">
           <div class="table-wrap" style="flex:1;display:flex;flex-direction:column;" id="chatContainer">
-            <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);padding:2rem;">
-              <p>Selecione um ticket para visualizar</p>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);padding:2rem;flex-direction:column;gap:0.8rem;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <p style="font-size:0.88rem;">Selecione um ticket para visualizar</p>
             </div>
           </div>
         </div>
@@ -177,8 +332,11 @@
 
     <!-- TRANSCRIPT -->
     <div class="page" id="page-transcript">
-      <div class="page-title"><span class="pt-icon">📋</span> Transcript — Todos os Tickets</div>
-      <div class="form-card" style="margin-bottom:1rem;">
+      <div class="page-header">
+        <div class="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="page-title">Transcript</div>
+      </div>
+      <div class="form-card">
         <div class="form-row">
           <select id="transcriptFilter" class="form-input" style="max-width:200px;" onchange="loadTranscript()">
             <option value="all">Todos</option>
@@ -193,16 +351,22 @@
 
     <!-- LOGS -->
     <div class="page" id="page-logs">
-      <div class="page-title"><span class="pt-icon">📊</span> Logs de Atividade</div>
+      <div class="page-header">
+        <div class="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="page-title">Logs de Atividade</div>
+      </div>
       <div class="stats-row" id="logStats"></div>
       <div class="table-wrap" id="logList"><div class="loading">Carregando...</div></div>
     </div>
 
     <!-- STAFF -->
     <div class="page" id="page-staff">
-      <div class="page-title"><span class="pt-icon">🛡️</span> Gerenciar Staff</div>
+      <div class="page-header">
+        <div class="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="page-title">Gerenciar Staff</div>
+      </div>
       <div class="form-card">
-        <h3>Adicionar staff</h3>
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Adicionar staff</h3>
         <div class="msg" id="staffMsg"></div>
         <div class="form-row">
           <input class="form-input" id="newStaffEmail" placeholder="Email ou Discord ID" />
@@ -212,7 +376,7 @@
         <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem;">Pode usar o email ou o ID do Discord do usuário.</p>
       </div>
       <div class="form-card">
-        <h3>Setar produto em usuário</h3>
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Setar produto em usuário</h3>
         <div class="msg" id="purchaseMsg"></div>
         <div class="form-row">
           <input class="form-input" id="purchaseEmail" placeholder="Email do usuário" />
@@ -221,15 +385,21 @@
           <button class="btn-primary" onclick="addPurchase()">Setar Produto</button>
         </div>
       </div>
-      <div class="page-title" style="font-size:1rem"><span class="pt-icon">👮</span> Staff Atual</div>
+      <div class="page-header" style="margin-top:1.5rem;margin-bottom:1rem;">
+        <div class="page-icon" style="width:32px;height:32px;border-radius:10px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="page-title" style="font-size:1rem;">Staff Atual</div>
+      </div>
       <div class="table-wrap" id="staffTable"><div class="loading">Carregando...</div></div>
     </div>
 
     <!-- CUPONS -->
     <div class="page" id="page-cupons">
-      <div class="page-title"><span class="pt-icon">🏷️</span> Gerenciar Cupons</div>
+      <div class="page-header">
+        <div class="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+        <div class="page-title">Gerenciar Cupons</div>
+      </div>
       <div class="form-card">
-        <h3>Criar Cupom</h3>
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Criar Cupom</h3>
         <div class="msg" id="couponMsg"></div>
         <div class="form-row">
           <input class="form-input" id="couponCode" placeholder="Código (ex: DESCONTO10)" style="max-width:200px;" />
@@ -248,7 +418,10 @@
 
     <!-- PEDIDOS -->
     <div class="page" id="page-pedidos">
-      <div class="page-title"><span class="pt-icon">📦</span> Pedidos</div>
+      <div class="page-header">
+        <div class="page-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+        <div class="page-title">Pedidos</div>
+      </div>
       <div class="table-wrap" id="ordersTable"><div class="loading">Carregando...</div></div>
     </div>
   </div>
@@ -327,49 +500,49 @@ function renderSessionList() {
   let html = '';
 
   if (liveIds.length) {
-    html += '<div style="padding:0.5rem 0.5rem;font-size:0.68rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;">🟢 AO VIVO</div>';
+    html += '<div style="padding:0.6rem 0.6rem 0.3rem;font-size:0.68rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:0.4rem;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-green 2s infinite;"></span> AO VIVO</div>';
     html += liveIds.map(id => {
       const s = liveSessions[id];
       const last = s.messages[s.messages.length-1];
       const preview = last ? last.text.slice(0,35)+(last.text.length>35?'...':'') : '';
       const time = last ? last.time : '';
-      return '<div style="padding:0.8rem;border-radius:8px;cursor:pointer;border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);margin-bottom:0.3rem;" onclick="selectLiveSession(\''+id+'\')">'+
-        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">'+
-          '<span style="width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse-green 2s infinite;"></span>'+
-          '<span style="font-size:0.85rem;font-weight:600;color:var(--white);">👤 '+esc(s.name)+'</span>'+
+      return '<div style="padding:0.75rem;border-radius:10px;cursor:pointer;border:1px solid rgba(34,197,94,0.25);background:rgba(34,197,94,0.03);margin:0.2rem 0.4rem;transition:all 0.25s;" onclick="selectLiveSession(\''+id+'\')" onmouseenter="this.style.borderColor=\'rgba(34,197,94,0.5)\';this.style.background=\'rgba(34,197,94,0.06)\'" onmouseleave="this.style.borderColor=\'rgba(34,197,94,0.25)\';this.style.background=\'rgba(34,197,94,0.03)\'">'+
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.3rem;">'+
+          '<span style="font-size:0.82rem;font-weight:600;color:var(--white);">👤 '+esc(s.name)+'</span>'+
         '</div>'+
         '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(preview)+'</div>'+
-        '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.3rem;">'+time+' · '+s.messages.length+' msgs</div>'+
+        '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.3rem;font-family:var(--mono);">'+time+' · '+s.messages.length+' msgs</div>'+
       '</div>';
     }).join('');
   }
 
   if (allTickets.length) {
-    if (liveIds.length) html += '<div style="padding:0.5rem 0.5rem;font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;border-top:1px solid var(--card-border);margin-top:0.5rem;">📋 TICKETS</div>';
+    if (liveIds.length) html += '<div style="padding:0.6rem 0.6rem 0.3rem;font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;border-top:1px solid rgba(26,86,219,0.1);margin-top:0.5rem;">📋 TICKETS</div>';
     html += allTickets.map(t => {
       const lastMsg = t.last_msg ? t.last_msg.slice(0,35)+(t.last_msg.length>35?'...':'') : 'Sem msgs';
       const time = new Date(t.updated_at).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'});
       const isOpen = t.status === 'open';
-      return '<div style="padding:0.8rem;border-radius:8px;cursor:pointer;border:1px solid '+(t.id===activeTicketId?'rgba(26,86,219,0.45)':'transparent')+';background:'+(t.id===activeTicketId?'var(--card)':'')+';margin-bottom:0.3rem;" onclick="selectTicket('+t.id+')">'+
-        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">'+
-          '<span style="width:8px;height:8px;border-radius:50%;background:'+(isOpen?'var(--green)':'var(--red)')+'"></span>'+
-          '<span style="font-size:0.85rem;font-weight:600;color:var(--white);">'+esc(t.subject)+'</span>'+
+      const isActive = t.id===activeTicketId;
+      return '<div style="padding:0.75rem;border-radius:10px;cursor:pointer;border:1px solid '+(isActive?'rgba(26,86,219,0.4)':'transparent')+';background:'+(isActive?'rgba(26,86,219,0.06)':'')+';margin:0.2rem 0.4rem;transition:all 0.25s;" onclick="selectTicket('+t.id+')" onmouseenter="if(!'+isActive+'){this.style.borderColor=\'rgba(26,86,219,0.2)\';this.style.background=\'rgba(26,86,219,0.03)\'}" onmouseleave="if(!'+isActive+'){this.style.borderColor=\'transparent\';this.style.background=\'\'}">'+
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">'+
+          '<span style="width:7px;height:7px;border-radius:50%;background:'+(isOpen?'var(--green)':'var(--red)')+';flex-shrink:0;"></span>'+
+          '<span style="font-size:0.82rem;font-weight:600;color:var(--white);">'+esc(t.subject)+'</span>'+
         '</div>'+
-        '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.2rem;">👤 '+esc(t.user_name||'?')+' ('+esc(t.user_email||'')+')</div>'+
-        '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(lastMsg)+'</div>'+
-        '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.3rem;">'+time+' · '+(t.msg_count||0)+' msgs</div>'+
+        '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.15rem;">👤 '+esc(t.user_name||'?')+' · '+esc(t.user_email||'')+'</div>'+
+        '<div style="font-size:0.7rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(lastMsg)+'</div>'+
+        '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:0.25rem;font-family:var(--mono);">'+time+' · '+(t.msg_count||0)+' msgs</div>'+
       '</div>';
     }).join('');
   }
 
   if (!liveIds.length && !allTickets.length) {
-    html = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.85rem;">Nenhum ticket ou conversa ativa</div>';
+    html = '<div style="text-align:center;padding:2.5rem 1rem;color:var(--text-muted);font-size:0.85rem;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:0.8rem;display:block;margin-left:auto;margin-right:auto;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Nenhum ticket ou conversa ativa</div>';
   }
 
   el.innerHTML = html;
 }
 
-async function selectLiveSession(id) {
+function selectLiveSession(id) {
   activeTicketId = null;
   renderSessionList();
   const s = liveSessions[id];
@@ -379,7 +552,7 @@ async function selectLiveSession(id) {
     '<div style="padding:0.9rem 1.2rem;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:0.8rem;">'+
       '<div>'+
         '<div style="font-size:0.92rem;font-weight:700;color:var(--white);">Chat ao vivo — '+esc(s.name)+'</div>'+
-        '<div style="font-size:0.72rem;color:var(--green);">🟢 Online · '+esc(s.email||'Sem email')+'</div>'+
+        '<div style="font-size:0.72rem;color:var(--green);display:flex;align-items:center;gap:0.3rem;"><span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotPulse 2s infinite;"></span> Online · '+esc(s.email||'Sem email')+'</div>'+
       '</div>'+
       '<div style="margin-left:auto;display:flex;gap:0.5rem;">'+
         '<button class="btn-danger btn-sm" onclick="closeLiveSession(\''+id+'\')">✕ Encerrar</button>'+
@@ -387,7 +560,7 @@ async function selectLiveSession(id) {
     '</div>'+
     '<div id="chatMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.6rem;"></div>'+
     '<div style="padding:0.8rem 1rem;border-top:1px solid var(--card-border);display:flex;gap:0.6rem;">'+
-      '<textarea id="staffReplyInput" style="flex:1;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;resize:none;min-height:38px;max-height:100px;" placeholder="Digite sua resposta..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendLiveReply(\''+id+'\');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'+
+      '<textarea id="staffReplyInput" style="flex:1;background:rgba(5,12,36,0.7);border:1px solid rgba(26,86,219,0.15);border-radius:10px;padding:0.65rem 1rem;color:var(--text);font-family:var(--font);font-size:0.85rem;resize:none;min-height:38px;max-height:100px;transition:border-color 0.2s;" placeholder="Digite sua resposta..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendLiveReply(\''+id+'\');}" onfocus="this.style.borderColor=\'rgba(26,86,219,0.4)\'" onblur="this.style.borderColor=\'rgba(26,86,219,0.15)\'" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'+
       '<button class="btn-primary" onclick="sendLiveReply(\''+id+'\')" style="height:38px;">Enviar</button>'+
     '</div>';
   renderLiveMessages(s);
@@ -401,13 +574,13 @@ function renderLiveMessages(s) {
     const name = isStaff ? 'ZK Studio' : s.name;
     const time = m.time;
     return '<div style="display:flex;gap:0.5rem;align-items:flex-end;max-width:75%;'+(isStaff?'align-self:flex-end;flex-direction:row-reverse;':'align-self:flex-start;')+'">'+
-      '<div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'#334155')+';'+(isStaff?'overflow:hidden;':'')+'">'+
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'rgba(51,65,85,0.6)')+';'+(isStaff?'overflow:hidden;border:2px solid rgba(26,86,219,0.3);':'border:2px solid rgba(100,116,139,0.3);')+'">'+
         (isStaff ? '<img src="/logos/ZK STUDIO SEM FUNDO.png" style="width:100%;height:100%;object-fit:contain;" />' : '👤')+
       '</div>'+
       '<div>'+
-        '<div style="font-size:0.68rem;font-weight:700;color:'+(isStaff?'var(--blue-bright)':'var(--text-muted)')+';'+(isStaff?'text-align:right;':'')+'">'+esc(name)+'</div>'+
-        '<div style="padding:0.5rem 0.8rem;border-radius:10px;font-size:0.84rem;line-height:1.5;background:'+(isStaff?'var(--blue)':'var(--card)')+';color:'+(isStaff?'#fff':'var(--text)')+';border:'+(isStaff?'none':'1px solid rgba(255,255,255,0.06)')+';border-bottom-'+(isStaff?'right':'left')+'-radius:2px;">'+esc(m.text)+'</div>'+
-        '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.2rem;text-align:right;">'+time+'</div>'+
+        '<div style="font-size:0.68rem;font-weight:700;color:'+(isStaff?'var(--blue-bright)':'var(--text-muted)')+';'+(isStaff?'text-align:right;':'')+';margin-bottom:0.2rem;">'+esc(name)+'</div>'+
+        '<div style="padding:0.55rem 0.9rem;border-radius:12px;font-size:0.84rem;line-height:1.5;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'rgba(11,21,53,0.7)')+';color:'+(isStaff?'#fff':'var(--text)')+';border:'+(isStaff?'none':'1px solid rgba(26,86,219,0.1)')+';backdrop-filter:blur(8px);border-bottom-'+(isStaff?'right':'left')+'-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">'+esc(m.text)+'</div>'+
+        '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.25rem;text-align:right;font-family:var(--mono);">'+time+'</div>'+
       '</div>'+
     '</div>';
   }).join('');
@@ -436,7 +609,7 @@ async function closeLiveSession(id) {
   });
   addLog('chat_closed', 'Chat com '+esc(liveSessions[id]?.name||'?')+' encerrado');
   delete liveSessions[id];
-  document.getElementById('chatContainer').innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);padding:2rem;"><p>Conversa encerrada.</p></div>';
+  document.getElementById('chatContainer').innerHTML = '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);padding:2rem;flex-direction:column;gap:0.8rem;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;"><polyline points="20 6 9 17 4 12"/></svg><p style="font-size:0.88rem;">Conversa encerrada.</p></div>';
   renderSessionList();
 }
 
@@ -451,20 +624,22 @@ async function selectTicket(id) {
     '<div style="padding:0.9rem 1.2rem;border-bottom:1px solid var(--card-border);display:flex;align-items:center;gap:0.8rem;">'+
       '<div>'+
         '<div style="font-size:0.92rem;font-weight:700;color:var(--white);">'+esc(ticket.subject)+'</div>'+
-        '<div style="font-size:0.72rem;color:'+(isOpen?'var(--green)':'var(--red)')+'">'+(isOpen?'🟢 Aberto':'🔴 Fechado')+' — '+esc(ticket.user_name||'?')+' ('+esc(ticket.user_email||'')+')</div>'+
+        '<div style="font-size:0.72rem;color:'+(isOpen?'var(--green)':'var(--red)')+';display:flex;align-items:center;gap:0.3rem;">'+
+          '<span style="width:6px;height:6px;border-radius:50%;background:'+(isOpen?'var(--green)':'var(--red)')+';"></span> '+(isOpen?'Aberto':'Fechado')+' — '+esc(ticket.user_name||'?')+' ('+esc(ticket.user_email||'')+')'+
+        '</div>'+
       '</div>'+
       '<div style="margin-left:auto;display:flex;gap:0.5rem;">'+
         (isOpen ? '<button class="btn-danger btn-sm" onclick="closeTicketFromChat('+id+')">✕ Fechar</button>' :
-         '<button style="background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);padding:0.35rem 0.8rem;border-radius:7px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:var(--font);" onclick="reopenTicket('+id+')">🔄 Reabrir</button>')+
+         '<button class="btn-green btn-sm" onclick="reopenTicket('+id+')">🔄 Reabrir</button>')+
       '</div>'+
     '</div>'+
     '<div id="chatMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.6rem;"></div>'+
     (isOpen ?
       '<div style="padding:0.8rem 1rem;border-top:1px solid var(--card-border);display:flex;gap:0.6rem;">'+
-        '<textarea id="staffReplyInput" style="flex:1;background:var(--bg2);border:1px solid var(--card-border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--font);font-size:0.85rem;resize:none;min-height:38px;max-height:100px;" placeholder="Digite sua resposta..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendStaffReply('+id+');}" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'+
+        '<textarea id="staffReplyInput" style="flex:1;background:rgba(5,12,36,0.7);border:1px solid rgba(26,86,219,0.15);border-radius:10px;padding:0.65rem 1rem;color:var(--text);font-family:var(--font);font-size:0.85rem;resize:none;min-height:38px;max-height:100px;transition:border-color 0.2s;" placeholder="Digite sua resposta..." rows="1" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();sendStaffReply('+id+');}" onfocus="this.style.borderColor=\'rgba(26,86,219,0.4)\'" onblur="this.style.borderColor=\'rgba(26,86,219,0.15)\'" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,100)+\'px\'"></textarea>'+
         '<button class="btn-primary" onclick="sendStaffReply('+id+')" style="height:38px;">Enviar</button>'+
       '</div>' :
-      '<div style="padding:0.6rem;text-align:center;font-size:0.8rem;color:var(--red);border-top:1px solid var(--card-border);">Ticket fechado</div>');
+      '<div style="padding:0.6rem;text-align:center;font-size:0.8rem;color:var(--red);border-top:1px solid var(--card-border);display:flex;align-items:center;justify-content:center;gap:0.4rem;"><span style="width:6px;height:6px;border-radius:50%;background:var(--red);"></span> Ticket fechado</div>');
   loadChatMessages(id);
 }
 
@@ -476,7 +651,7 @@ async function loadChatMessages(ticketId) {
     if (!el) return;
     const msgs = d.messages || [];
     if (!msgs.length) {
-      el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem;">Nenhuma mensagem ainda.</div>';
+      el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:2rem;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:0.5rem;display:block;margin-left:auto;margin-right:auto;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Nenhuma mensagem ainda.</div>';
       return;
     }
     el.innerHTML = msgs.map(m => {
@@ -484,13 +659,13 @@ async function loadChatMessages(ticketId) {
       const name = m.sender_name || (isStaff ? 'ZK Studio' : 'Usuário');
       const time = new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       return '<div style="display:flex;gap:0.5rem;align-items:flex-end;max-width:75%;'+(isStaff?'align-self:flex-end;flex-direction:row-reverse;':'align-self:flex-start;')+'">'+
-        '<div style="width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'#334155')+';'+(isStaff?'overflow:hidden;':'')+'">'+
+        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'rgba(51,65,85,0.6)')+';'+(isStaff?'overflow:hidden;border:2px solid rgba(26,86,219,0.3);':'border:2px solid rgba(100,116,139,0.3);')+'">'+
           (isStaff ? '<img src="/logos/ZK STUDIO SEM FUNDO.png" style="width:100%;height:100%;object-fit:contain;" />' : '👤')+
         '</div>'+
         '<div>'+
-          '<div style="font-size:0.68rem;font-weight:700;color:'+(isStaff?'var(--blue-bright)':'var(--text-muted)')+';'+(isStaff?'text-align:right;':'')+'">'+esc(name)+'</div>'+
-          '<div style="padding:0.5rem 0.8rem;border-radius:10px;font-size:0.84rem;line-height:1.5;background:'+(isStaff?'var(--blue)':'var(--card)')+';color:'+(isStaff?'#fff':'var(--text)')+';border:'+(isStaff?'none':'1px solid rgba(255,255,255,0.06)')+';border-bottom-'+(isStaff?'right':'left')+'-radius:2px;">'+esc(m.message)+'</div>'+
-          '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.2rem;text-align:right;">'+time+'</div>'+
+          '<div style="font-size:0.68rem;font-weight:700;color:'+(isStaff?'var(--blue-bright)':'var(--text-muted)')+';'+(isStaff?'text-align:right;':'')+';margin-bottom:0.2rem;">'+esc(name)+'</div>'+
+          '<div style="padding:0.55rem 0.9rem;border-radius:12px;font-size:0.84rem;line-height:1.5;background:'+(isStaff?'linear-gradient(135deg,var(--blue),var(--blue-dark))':'rgba(11,21,53,0.7)')+';color:'+(isStaff?'#fff':'var(--text)')+';border:'+(isStaff?'none':'1px solid rgba(26,86,219,0.1)')+';backdrop-filter:blur(8px);border-bottom-'+(isStaff?'right':'left')+'-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,0.15);">'+esc(m.message)+'</div>'+
+          '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:0.25rem;text-align:right;font-family:var(--mono);">'+time+'</div>'+
         '</div>'+
       '</div>';
     }).join('');
@@ -533,12 +708,8 @@ async function reopenTicket(id) {
   selectTicket(id);
 }
 
-// ── LIVE CHAT SESSIONS ───────────────────────────────────────────────
-function startLivePolling() {
-  if (livePolling) return;
-  pollLiveSessions();
-}
-
+// ── LIVE CHAT ───────────────────────────────────────────────────────
+function startLivePolling() { if (livePolling) return; pollLiveSessions(); }
 async function pollLiveSessions() {
   try {
     const r = await fetch('/chat/admin/sessions');
@@ -567,7 +738,7 @@ function renderTranscript(tickets) {
     el.innerHTML = '<div class="loading">Nenhum ticket encontrado.</div>';
     return;
   }
-  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>ID</th><th>Usuário</th><th>Assunto</th><th>Status</th><th>Mensagens</th><th>Criado</th><th>Última Atividade</th><th>Ação</th></tr></thead><tbody>'+
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>ID</th><th>Usuário</th><th>Assunto</th><th>Status</th><th>Mensagens</th><th>Criado</th><th>Atividade</th><th>Ação</th></tr></thead><tbody>'+
     tickets.map(t => {
       const isOpen = t.status === 'open';
       return '<tr>'+
@@ -587,12 +758,11 @@ function renderTranscript(tickets) {
 
 function filterTranscript() {
   const search = document.getElementById('transcriptSearch').value.toLowerCase();
-  const filtered = transcriptData.filter(t =>
+  renderTranscript(transcriptData.filter(t =>
     t.subject.toLowerCase().includes(search) ||
     (t.user_name||'').toLowerCase().includes(search) ||
     (t.user_email||'').toLowerCase().includes(search)
-  );
-  renderTranscript(filtered);
+  ));
 }
 
 async function viewTranscriptTicket(id) {
@@ -610,9 +780,9 @@ async function viewTranscriptTicket(id) {
             const isStaff = m.sender_type === 'staff';
             const name = m.sender_name || (isStaff ? 'ZK Studio' : 'Usuário');
             const time = new Date(m.created_at).toLocaleString('pt-BR');
-            return '<div style="padding:0.5rem 0;border-bottom:1px solid var(--card-border);display:flex;gap:0.6rem;">'+
+            return '<div style="padding:0.5rem 0;border-bottom:1px solid rgba(26,86,219,0.08);display:flex;gap:0.6rem;">'+
               '<div style="font-size:0.72rem;color:'+(isStaff?'var(--blue-bright)':'var(--green)')+';font-weight:700;white-space:nowrap;">'+esc(name)+'</div>'+
-              '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">'+time+'</div>'+
+              '<div style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;font-family:var(--mono);">'+time+'</div>'+
               '<div style="font-size:0.82rem;color:var(--text);flex:1;">'+esc(m.message)+'</div>'+
             '</div>';
           }).join('') : '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Sem mensagens</div>')+
@@ -627,15 +797,13 @@ let localLogs = [];
 async function loadLogs() {
   const open = allTickets.filter(t => t.status === 'open').length;
   const closed = allTickets.filter(t => t.status === 'closed').length;
-  const total = allTickets.length;
   document.getElementById('logStats').innerHTML =
-    '<div class="stat-card"><div class="sc-num">'+total+'</div><div class="sc-label">Total Tickets</div></div>'+
+    '<div class="stat-card"><div class="sc-num">'+allTickets.length+'</div><div class="sc-label">Total</div></div>'+
     '<div class="stat-card"><div class="sc-num" style="color:var(--green)">'+open+'</div><div class="sc-label">Abertos</div></div>'+
     '<div class="stat-card"><div class="sc-num" style="color:var(--red)">'+closed+'</div><div class="sc-label">Fechados</div></div>';
 
   const saved = JSON.parse(localStorage.getItem('zk_support_logs')||'[]');
   localLogs = [...saved];
-
   allTickets.forEach(t => {
     localLogs.push({ type:'ticket_created', text:'Ticket #'+t.id+' ('+t.subject+') criado por '+(t.user_name||'?'), time:t.created_at });
     if (t.status === 'closed') localLogs.push({ type:'ticket_closed', text:'Ticket #'+t.id+' ('+t.subject+') fechado', time:t.updated_at });
@@ -647,18 +815,20 @@ async function loadLogs() {
     el.innerHTML = '<div class="loading">Nenhum log ainda.</div>';
     return;
   }
-  el.innerHTML = '<div class="table-wrap">'+localLogs.slice(0,50).map(l => {
-    const icon = l.type==='ticket_created'?'🎫':l.type==='ticket_closed'?'🔒':l.type==='staff_added'?'🛡️':l.type==='purchase'?'🛒':'📝';
+  el.innerHTML = localLogs.slice(0,50).map(l => {
     const time = new Date(l.time).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    return '<div class="log-entry"><span class="log-icon">'+icon+'</span><span class="log-time">'+time+'</span><span class="log-text">'+esc(l.text)+'</span></div>';
-  }).join('')+'</div>';
+    let iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    if (l.type==='ticket_closed') iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+    else if (l.type==='staff_added') iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>';
+    else if (l.type==='purchase') iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+    return '<div class="log-entry"><div class="log-icon">'+iconSvg+'</div><span class="log-time">'+time+'</span><span class="log-text">'+esc(l.text)+'</span></div>';
+  }).join('');
 }
 
 function addLog(type, text) {
   const log = { type, text, time: new Date().toISOString() };
   localLogs.unshift(log);
-  const saved = localLogs.slice(0,100);
-  localStorage.setItem('zk_support_logs', JSON.stringify(saved));
+  localStorage.setItem('zk_support_logs', JSON.stringify(localLogs.slice(0,100)));
 }
 
 // ── STAFF ────────────────────────────────────────────────────────────
@@ -745,7 +915,8 @@ function logout() {
   localStorage.removeItem('zk_user');
   window.location.href='/';
 }
-// ── CUPONS ──────────────────────────────────────────────────────────────
+
+// ── CUPONS ──────────────────────────────────────────────────────────
 async function loadCoupons() {
   document.getElementById('couponTable').innerHTML = '<div class="loading">Carregando...</div>';
   try {
@@ -782,10 +953,7 @@ async function createCoupon() {
   const discount_value = parseFloat(document.getElementById('couponValue').value);
   const max_uses = parseInt(document.getElementById('couponMaxUses').value) || 0;
   const valid_until = document.getElementById('couponValidUntil').value || null;
-  if (!code || !discount_value || discount_value <= 0) {
-    showMsg('couponMsg','error','Preencha código e valor.');
-    return;
-  }
+  if (!code || !discount_value || discount_value <= 0) { showMsg('couponMsg','error','Preencha código e valor.'); return; }
   const r = await fetch('/coupon/create', {
     method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
     body: JSON.stringify({ code, discount_type, discount_value, max_uses, valid_until })
@@ -811,7 +979,7 @@ async function deleteCoupon(code) {
   else alert('Erro ao deletar.');
 }
 
-// ── PEDIDOS ──────────────────────────────────────────────────────────────
+// ── PEDIDOS ──────────────────────────────────────────────────────────
 async function loadOrders() {
   document.getElementById('ordersTable').innerHTML = '<div class="loading">Carregando...</div>';
   try {
@@ -825,10 +993,8 @@ async function loadOrders() {
     document.getElementById('ordersTable').innerHTML = '<table><thead><tr><th>#</th><th>Comprador</th><th>Email</th><th>Doc</th><th>Itens</th><th>Total</th><th>Status</th><th>Data</th><th>Ação</th></tr></thead><tbody>'+
       list.map(o => {
         const items = (o.items||[]).map(i=>i.name+' x'+i.qty).join(', ');
-        const statusColors = { pending:'badge-yellow', paid:'badge-green', cancelled:'badge-red' };
-        const statusLabels = { pending:'Pendente', paid:'Pago', cancelled:'Cancelado' };
-        const statusClass = statusColors[o.status]||'badge-yellow';
-        const statusLabel = statusLabels[o.status]||o.status;
+        const sc = { pending:'badge-yellow', paid:'badge-green', cancelled:'badge-red' };
+        const sl = { pending:'Pendente', paid:'Pago', cancelled:'Cancelado' };
         return '<tr>'+
           '<td class="td-mono">#'+o.id+'</td>'+
           '<td class="td-name">'+esc(o.buyer_name)+'</td>'+
@@ -836,7 +1002,7 @@ async function loadOrders() {
           '<td class="td-mono">'+esc(o.buyer_doc||'-')+'</td>'+
           '<td style="font-size:0.75rem;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+esc(items)+'">'+esc(items)+'</td>'+
           '<td class="td-mono" style="color:var(--blue-bright);font-weight:700;">'+esc(o.total)+'</td>'+
-          '<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'+
+          '<td><span class="badge '+(sc[o.status]||'badge-yellow')+'">'+(sl[o.status]||o.status)+'</span></td>'+
           '<td class="td-mono">'+new Date(o.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+'</td>'+
           '<td>'+
             (o.status==='pending'?'<button class="btn-primary btn-sm" onclick="updateOrderStatus('+o.id+',\'paid\')" style="font-size:0.68rem;">✔ Pago</button>':'')+
@@ -845,7 +1011,7 @@ async function loadOrders() {
         '</tr>';
       }).join('')+
     '</tbody></table>';
-  } catch(e) { document.getElementById('ordersTable').innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
+  } catch { document.getElementById('ordersTable').innerHTML = '<div class="loading">Erro ao carregar.</div>'; }
 }
 
 async function updateOrderStatus(id, status) {
@@ -857,6 +1023,19 @@ async function updateOrderStatus(id, status) {
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── CURSOR ───────────────────────────────────────────────────────────
+const dot = document.getElementById('cursor-dot');
+if (dot) {
+  let mx = innerWidth / 2, my = innerHeight / 2;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx + 'px'; dot.style.top = my + 'px'; });
+  document.addEventListener('mouseleave', () => { dot.style.opacity = '0'; });
+  document.addEventListener('mouseenter', () => { dot.style.opacity = '1'; });
+  document.querySelectorAll('a,button,.sidebar-item,.stat-card,.form-card').forEach(el => {
+    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-hover'));
+  });
+}
 
 init();
 </script>
